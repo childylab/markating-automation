@@ -59,12 +59,11 @@ def sa_header(method, uri):
 def get_purchase_conversions():
     """
     stat-reports에서 AD_CONVERSION_DETAIL 리포트를 가져와서
-    'purchase' 전환만 캠페인별로 합산하여 반환
-    여러 날짜의 리포트를 모두 다운받아 30일치 합산
+    'purchase'와 'add_to_cart' 전환을 캠페인별로 합산하여 반환
+    여러 날짜의 리포트를 모두 다운받아 합산
     """
     import requests as req
 
-    # 기존 빌드된 리포트 목록에서 AD_CONVERSION_DETAIL 찾기
     uri = "/stat-reports"
     r = req.get(SA_BASE_URL + uri, headers=sa_header("GET", uri))
     if r.status_code != 200:
@@ -74,7 +73,6 @@ def get_purchase_conversions():
     if not isinstance(reports, list):
         return {}
 
-    # 빌드 완료된 AD_CONVERSION_DETAIL 리포트 전부 (최대 30개)
     conv_reports = [
         rp for rp in reports
         if rp.get("reportTp") == "AD_CONVERSION_DETAIL" and rp.get("status") == "BUILT"
@@ -83,10 +81,9 @@ def get_purchase_conversions():
     if not conv_reports:
         return {}
 
-    # 모든 리포트 다운로드 후 purchase만 캠페인별 합산
-    purchase_by_campaign = {}
+    result = {}
 
-    for rp in conv_reports[:30]:  # 최대 30일치
+    for rp in conv_reports[:30]:
         download_url = rp.get("downloadUrl", "")
         if not download_url:
             continue
@@ -106,15 +103,18 @@ def get_purchase_conversions():
             conv_count = int(cols[13].strip()) if len(cols) > 13 and cols[13].strip().isdigit() else 0
             conv_amount = int(cols[14].strip()) if len(cols) > 14 and cols[14].strip().isdigit() else 0
 
-            if conv_type == "purchase":
-                if campaign_id not in purchase_by_campaign:
-                    purchase_by_campaign[campaign_id] = {"count": 0, "amount": 0}
-                purchase_by_campaign[campaign_id]["count"] += conv_count
-                purchase_by_campaign[campaign_id]["amount"] += conv_amount
+            if conv_type in ("purchase", "add_to_cart"):
+                if campaign_id not in result:
+                    result[campaign_id] = {"purchaseCount": 0, "purchaseAmount": 0, "cartCount": 0}
+                if conv_type == "purchase":
+                    result[campaign_id]["purchaseCount"] += conv_count
+                    result[campaign_id]["purchaseAmount"] += conv_amount
+                elif conv_type == "add_to_cart":
+                    result[campaign_id]["cartCount"] += conv_count
 
-        time.sleep(0.2)  # rate limit
+        time.sleep(0.2)
 
-    return purchase_by_campaign
+    return result
 
 
 @app.route("/api/sa/campaigns", methods=["GET"])
@@ -164,7 +164,7 @@ def get_sa_campaigns():
     for s in all_stats:
         cid = s.get("id", "")
         camp = campaign_map.get(cid, {})
-        pdata = purchase_data.get(cid, {"count": 0, "amount": 0})
+        pdata = purchase_data.get(cid, {"purchaseCount": 0, "purchaseAmount": 0, "cartCount": 0})
 
         output.append({
             "id": cid,
@@ -182,8 +182,9 @@ def get_sa_campaigns():
             "convValue": s.get("convAmt", 0),
             "viewConversions": s.get("viewCnt", 0),
             "viewConvValue": s.get("viewAmt", 0),
-            "purchaseCount": pdata["count"],
-            "purchaseAmount": pdata["amount"],
+            "purchaseCount": pdata["purchaseCount"],
+            "purchaseAmount": pdata["purchaseAmount"],
+            "cartCount": pdata["cartCount"],
         })
 
     return jsonify(output)

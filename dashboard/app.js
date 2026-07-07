@@ -1,11 +1,11 @@
 // === 데이터 ===
 let saData = [
-  { name: "오디너리홀리데이_PC", type: "WEB_SITE", impressions: 304, clicks: 8, cost: 1806, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0 },
-  { name: "오디너리홀리데이_MO", type: "WEB_SITE", impressions: 7225, clicks: 915, cost: 192598, conversions: 68, convValue: 535350, purchaseCount: 5, purchaseAmount: 296850 },
-  { name: "ODP스마트스토어_쇼핑검색", type: "SHOPPING", impressions: 432378, clicks: 2143, cost: 590850, conversions: 866, convValue: 46922010, purchaseCount: 39, purchaseAmount: 1281770 },
-  { name: "ODP스마트스토어_쇼핑검색_일반키워드", type: "SHOPPING", impressions: 267906, clicks: 2376, cost: 722152, conversions: 1178, convValue: 60195600, purchaseCount: 68, purchaseAmount: 2653280 },
-  { name: "차일디_브랜드검색", type: "BRAND_SEARCH", impressions: 4054, clicks: 1309, cost: 0, conversions: 383, convValue: 3317300, purchaseCount: 0, purchaseAmount: 0 },
-  { name: "유니버셜오버롤_MO_브랜드검색", type: "BRAND_SEARCH", impressions: 108, clicks: 47, cost: 0, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0 },
+  { name: "오디너리홀리데이_PC", type: "WEB_SITE", impressions: 304, clicks: 8, cost: 1806, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0 },
+  { name: "오디너리홀리데이_MO", type: "WEB_SITE", impressions: 7225, clicks: 915, cost: 192598, conversions: 68, convValue: 535350, purchaseCount: 5, purchaseAmount: 296850, cartCount: 30 },
+  { name: "ODP스마트스토어_쇼핑검색", type: "SHOPPING", impressions: 432378, clicks: 2143, cost: 590850, conversions: 866, convValue: 46922010, purchaseCount: 39, purchaseAmount: 1281770, cartCount: 280 },
+  { name: "ODP스마트스토어_쇼핑검색_일반키워드", type: "SHOPPING", impressions: 267906, clicks: 2376, cost: 722152, conversions: 1178, convValue: 60195600, purchaseCount: 68, purchaseAmount: 2653280, cartCount: 404 },
+  { name: "차일디_브랜드검색", type: "BRAND_SEARCH", impressions: 4054, clicks: 1309, cost: 0, conversions: 383, convValue: 3317300, purchaseCount: 0, purchaseAmount: 0, cartCount: 10 },
+  { name: "유니버셜오버롤_MO_브랜드검색", type: "BRAND_SEARCH", impressions: 108, clicks: 47, cost: 0, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0 },
 ];
 
 let daData = [
@@ -98,25 +98,31 @@ function renderSummary(el, data) {
 function renderTable(tableEl, data) {
   const tbody = tableEl.querySelector("tbody");
   if (!data.length || (data.length === 1 && data[0].cost === 0 && data[0].note)) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${data[0]?.note || "데이터 없음"}</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">${data[0]?.note || "데이터 없음"}</td></tr>`;
     return;
   }
 
   const sorted = [...data].sort((a, b) => b.cost - a.cost);
   tbody.innerHTML = sorted.map((c) => {
-    const roas = calcRoas(c.cost, c.convValue);
-    const purchaseRoas = c.purchaseAmount ? calcRoas(c.cost, c.purchaseAmount) : "-";
-    const roasClass = purchaseRoas !== "-" && parseFloat(purchaseRoas) >= 500 ? "roas-high" : "";
+    const purchaseRoas = c.cost && c.purchaseAmount ? ((c.purchaseAmount / c.cost) * 100).toFixed(1) + "%" : "-";
+    const roasClass = purchaseRoas !== "-" && parseFloat(purchaseRoas) >= 300 ? "roas-high" : "";
+    const ctr = c.impressions ? ((c.clicks / c.impressions) * 100).toFixed(2) + "%" : "-";
+    const impToPurchase = c.impressions && c.purchaseCount ? ((c.purchaseCount / c.impressions) * 100).toFixed(3) + "%" : "-";
+    const clkToPurchase = c.clicks && c.purchaseCount ? ((c.purchaseCount / c.clicks) * 100).toFixed(1) + "%" : "-";
+
     return `
       <tr>
         <td class="campaign-name">${c.name}</td>
         <td class="num">${fmtWon(c.cost)}</td>
         <td class="num">${fmt(c.impressions)}</td>
         <td class="num">${fmt(c.clicks)}</td>
+        <td class="num">${ctr}</td>
+        <td class="num">${fmt(c.cartCount || 0)}</td>
         <td class="num">${fmt(c.purchaseCount || 0)}</td>
         <td class="num">${fmtWon(c.purchaseAmount || 0)}</td>
         <td class="num ${roasClass}">${purchaseRoas}</td>
-        <td class="num">${roas}</td>
+        <td class="num">${impToPurchase}</td>
+        <td class="num">${clkToPurchase}</td>
       </tr>
     `;
   }).join("");
@@ -172,6 +178,7 @@ document.getElementById("btnRefreshSA").addEventListener("click", async () => {
       name: c.name, type: c.type, impressions: c.impressions,
       clicks: c.clicks, cost: c.cost, conversions: c.conversions, convValue: c.convValue,
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
+      cartCount: c.cartCount || 0,
     }));
     render();
     setStatus(`SA 갱신 완료 — ${data.length}개 캠페인`, "success");
