@@ -61,20 +61,22 @@ function renderKPI() {
   const saCost = saData.reduce((s, c) => s + c.cost, 0);
   const saClicks = saData.reduce((s, c) => s + c.clicks, 0);
   const saConvValue = saData.reduce((s, c) => s + c.convValue, 0);
+  const saPurchaseAmt = saData.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
 
   const daCost = daData.reduce((s, c) => s + c.cost, 0);
   const daClicks = daData.reduce((s, c) => s + c.clicks, 0);
   const daConvValue = daData.reduce((s, c) => s + c.convValue, 0);
+  const daPurchaseAmt = daData.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
 
   const totalCost = saCost + daCost;
-  const totalConv = saData.reduce((s, c) => s + c.conversions, 0) + daData.reduce((s, c) => s + c.conversions, 0);
+  const totalConv = saData.reduce((s, c) => s + (c.purchaseCount || 0), 0) + daData.reduce((s, c) => s + (c.purchaseCount || 0), 0);
 
   document.getElementById("saCpc").textContent = calcCpc(saCost, saClicks);
-  document.getElementById("saRoas").textContent = saCost ? ((saConvValue / saCost) * 100).toFixed(1) + "%" : "-";
+  document.getElementById("saRoas").textContent = saCost && saPurchaseAmt ? ((saPurchaseAmt / saCost) * 100).toFixed(1) + "%" : "-";
   document.getElementById("daCpc").textContent = calcCpc(daCost, daClicks);
-  document.getElementById("daRoas").textContent = daCost ? ((daConvValue / daCost) * 100).toFixed(1) + "%" : "-";
+  document.getElementById("daRoas").textContent = daCost && daPurchaseAmt ? ((daPurchaseAmt / daCost) * 100).toFixed(1) + "%" : "-";
   document.getElementById("totalCost").textContent = fmtWon(totalCost);
-  document.getElementById("totalConv").textContent = fmt(totalConv);
+  document.getElementById("totalConv").textContent = fmt(totalConv) + "건";
 }
 
 function renderSummary(el, data) {
@@ -96,22 +98,25 @@ function renderSummary(el, data) {
 function renderTable(tableEl, data) {
   const tbody = tableEl.querySelector("tbody");
   if (!data.length || (data.length === 1 && data[0].cost === 0 && data[0].note)) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${data[0]?.note || "데이터 없음"}</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${data[0]?.note || "데이터 없음"}</td></tr>`;
     return;
   }
 
   const sorted = [...data].sort((a, b) => b.cost - a.cost);
   tbody.innerHTML = sorted.map((c) => {
     const roas = calcRoas(c.cost, c.convValue);
-    const roasClass = roas !== "-" && parseFloat(roas) >= 500 ? "roas-high" : "";
+    const purchaseRoas = c.purchaseAmount ? calcRoas(c.cost, c.purchaseAmount) : "-";
+    const roasClass = purchaseRoas !== "-" && parseFloat(purchaseRoas) >= 500 ? "roas-high" : "";
     return `
       <tr>
         <td class="campaign-name">${c.name}</td>
         <td class="num">${fmtWon(c.cost)}</td>
         <td class="num">${fmt(c.impressions)}</td>
         <td class="num">${fmt(c.clicks)}</td>
-        <td class="num">${fmt(c.conversions)}</td>
-        <td class="num ${roasClass}">${roas}</td>
+        <td class="num">${fmt(c.purchaseCount || 0)}</td>
+        <td class="num">${fmtWon(c.purchaseAmount || 0)}</td>
+        <td class="num ${roasClass}">${purchaseRoas}</td>
+        <td class="num">${roas}</td>
       </tr>
     `;
   }).join("");

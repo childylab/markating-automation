@@ -115,15 +115,41 @@ API 호출 시 HTTP 헤더의 `X-Customer` 값을 광고계정별 Customer ID로
 
 ### 5.1 조회 가능한 성과 지표 (fields)
 
+**stat API (요약 통계)**
 ```
 impCnt      — 노출수
 clkCnt      — 클릭수
 salesAmt    — 광고비(소진액)
 ctr         — 클릭률
 cpc         — 클릭당 비용
+ccnt        — 전환수 (모든 전환 합산: 구매+장바구니+기타)
+convAmt     — 전환매출 (모든 전환 합산)
+crto        — 전환율
+viewCnt     — 조회전환수
+viewAmt     — 조회전환매출
 avgRnk      — 평균 노출 순위
-ccnt        — 전환수
 ```
+
+> ⚠️ stat API의 `ccnt`/`convAmt`는 구매, 장바구니, 회원가입 등 **모든 전환이 합산**되어 ROAS가 과대 산출됨.
+
+**stat-reports API (마스터 리포트 — 전환 상세)**
+
+| 리포트 타입 | 설명 |
+|------------|------|
+| `AD_CONVERSION_DETAIL` | 소재 단위 전환 상세 (전환유형별 분리) |
+| `CRITERION_CONVERSION` | 키워드/타겟 단위 전환 상세 |
+
+`AD_CONVERSION_DETAIL` 리포트 컬럼 (탭 구분):
+```
+날짜 | CustomerID | 캠페인ID | 광고그룹ID | 키워드ID | 소재ID | 채널ID | 시간대 | 전환경로코드 | 매체ID | 디바이스 | 전환경로구분 | 전환유형 | 전환수 | 전환금액
+```
+
+전환유형 값:
+- `purchase` — **실제 구매** (정확한 ROAS 산출용)
+- `add_to_cart` — 장바구니 추가
+- 기타 (회원가입, 신청 등)
+
+**→ `purchase` 전환만 필터링하면 정확한 구매 ROAS 계산 가능**
 
 마스터 리포트를 통해 이보다 더 상세한 필드(전환값, ROAS, 디바이스별 분리 등)를 일별로 추출할 수 있다.
 

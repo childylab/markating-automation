@@ -56,9 +56,64 @@ def sa_header(method, uri):
     }
 
 
+def get_purchase_conversions():
+    """
+    stat-reports에서 AD_CONVERSION_DETAIL 리포트를 가져와서
+    'purchase' 전환만 캠페인별로 합산하여 반환
+    """
+    import requests as req
+
+    # 기존 빌드된 리포트 목록에서 AD_CONVERSION_DETAIL 찾기
+    uri = "/stat-reports"
+    r = req.get(SA_BASE_URL + uri, headers=sa_header("GET", uri))
+    if r.status_code != 200:
+        return {}
+
+    reports = r.json()
+    if not isinstance(reports, list):
+        return {}
+
+    # 가장 최신 AD_CONVERSION_DETAIL 리포트 찾기
+    conv_reports = [rp for rp in reports if rp.get("reportTp") == "AD_CONVERSION_DETAIL" and rp.get("status") == "BUILT"]
+    if not conv_reports:
+        return {}
+
+    # downloadUrl로 다운로드
+    download_url = conv_reports[0].get("downloadUrl", "")
+    if not download_url:
+        return {}
+
+    r = req.get(download_url, headers=sa_header("GET", "/report-download"))
+    if r.status_code != 200:
+        return {}
+
+    # 탭 구분 파싱, purchase만 필터
+    # 컬럼: 날짜 | CID | 캠페인ID | 광고그룹ID | 키워드ID | 소재ID | 채널ID | 시간 | 전환경로 | 매체ID | 디바이스 | 전환경로구분 | 전환유형 | 전환수 | 전환금액
+    purchase_by_campaign = {}
+
+    lines = r.content.decode("utf-8", errors="replace").strip().split("\n")
+    for line in lines:
+        cols = line.split("\t")
+        if len(cols) < 15:
+            continue
+
+        campaign_id = cols[2].strip()
+        conv_type = cols[12].strip() if len(cols) > 12 else ""
+        conv_count = int(cols[13].strip()) if len(cols) > 13 and cols[13].strip().isdigit() else 0
+        conv_amount = int(cols[14].strip()) if len(cols) > 14 and cols[14].strip().isdigit() else 0
+
+        if conv_type == "purchase":
+            if campaign_id not in purchase_by_campaign:
+                purchase_by_campaign[campaign_id] = {"count": 0, "amount": 0}
+            purchase_by_campaign[campaign_id]["count"] += conv_count
+            purchase_by_campaign[campaign_id]["amount"] += conv_amount
+
+    return purchase_by_campaign
+
+
 @app.route("/api/sa/campaigns", methods=["GET"])
 def get_sa_campaigns():
-    """SA 캠페인 성과 데이터 반환"""
+    """SA 캠페인 성과 데이터 반환 (구매전환 분리 포함)"""
     import requests as req
 
     start_date = request.args.get("start", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
@@ -77,9 +132,9 @@ def get_sa_campaigns():
     if not campaign_ids:
         return jsonify([])
 
-    # 성과 데이터
+    # 성과 데이터 (stat API - 합산)
     uri = "/stats"
-    fields = json.dumps(["impCnt", "clkCnt", "salesAmt", "ctr", "cpc", "ccnt", "crto", "convAmt"])
+    fields = json.dumps(["impCnt", "clkCnt", "salesAmt", "ctr", "cpc", "ccnt", "convAmt", "crto", "viewCnt", "viewAmt"])
     time_range = json.dumps({"since": start_date, "until": end_date})
 
     all_stats = []
@@ -95,11 +150,16 @@ def get_sa_campaigns():
                 all_stats.extend(result)
         time.sleep(0.3)
 
+    # 구매전환 상세 데이터 (stat-reports에서 가져오기)
+    purchase_data = get_purchase_conversions()
+
     # 조합
     output = []
     for s in all_stats:
         cid = s.get("id", "")
         camp = campaign_map.get(cid, {})
+        pdata = purchase_data.get(cid, {"count": 0, "amount": 0})
+
         output.append({
             "id": cid,
             "name": camp.get("name", ""),
@@ -114,6 +174,10 @@ def get_sa_campaigns():
             "conversions": s.get("ccnt", 0),
             "convRate": s.get("crto", 0),
             "convValue": s.get("convAmt", 0),
+            "viewConversions": s.get("viewCnt", 0),
+            "viewConvValue": s.get("viewAmt", 0),
+            "purchaseCount": pdata["count"],
+            "purchaseAmount": pdata["amount"],
         })
 
     return jsonify(output)
