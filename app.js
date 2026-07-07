@@ -190,3 +190,91 @@ document.getElementById("btnRefreshSA").addEventListener("click", async () => {
 
 // === 초기 렌더 ===
 render();
+
+// === DA CSV 업로드 ===
+document.getElementById("daFileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  setStatus("DA CSV 파일 읽는 중...");
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const text = evt.target.result;
+      const parsed = parseNaverDaCsv(text);
+      if (parsed.length > 0) {
+        daData = parsed;
+        render();
+        setStatus(`DA 데이터 반영 완료 — ${parsed.length}일치 데이터`, "success");
+      } else {
+        setStatus("CSV에서 데이터를 읽지 못했어요. 파일 형식을 확인해주세요.", "error");
+      }
+    } catch (err) {
+      setStatus("CSV 파싱 에러: " + err.message, "error");
+    }
+  };
+  reader.readAsText(file, "utf-8");
+  e.target.value = ""; // 같은 파일 재업로드 허용
+});
+
+function parseNaverDaCsv(text) {
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+
+  // BOM 제거
+  let header = lines[0].replace(/^\uFEFF/, "");
+  const headers = header.split(",");
+
+  // 컬럼 인덱스 찾기
+  const idx = (name) => headers.findIndex((h) => h.trim() === name);
+  const iName = idx("캠페인 이름");
+  const iCost = idx("총비용");
+  const iImpressions = idx("노출수");
+  const iClicks = idx("클릭수");
+  const iPurchase = idx("구매완료 수");
+  const iCart = idx("장바구니 담기 수");
+  const iPurchaseAmt = idx("구매완료 전환매출액");
+  const iConversions = idx("총 전환수");
+  const iConvValue = idx("총 전환매출액");
+
+  // 캠페인별 합산 (일별 데이터가 여러 줄이므로)
+  const campaigns = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",");
+    if (cols.length < 5) continue;
+
+    const name = cols[iName]?.trim() || "";
+    if (!name) continue;
+
+    const toNum = (v) => parseInt((v || "0").replace(/[^0-9.-]/g, "")) || 0;
+
+    if (!campaigns[name]) {
+      campaigns[name] = {
+        name,
+        type: "DISPLAY",
+        account: "DA",
+        impressions: 0,
+        clicks: 0,
+        cost: 0,
+        conversions: 0,
+        convValue: 0,
+        purchaseCount: 0,
+        purchaseAmount: 0,
+        cartCount: 0,
+      };
+    }
+
+    const c = campaigns[name];
+    c.cost += toNum(cols[iCost]);
+    c.impressions += toNum(cols[iImpressions]);
+    c.clicks += toNum(cols[iClicks]);
+    c.purchaseCount += toNum(cols[iPurchase]);
+    c.cartCount += toNum(cols[iCart]);
+    c.purchaseAmount += toNum(cols[iPurchaseAmt]);
+    c.conversions += toNum(cols[iConversions]);
+    c.convValue += toNum(cols[iConvValue]);
+  }
+
+  return Object.values(campaigns);
+}
