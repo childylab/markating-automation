@@ -192,83 +192,66 @@ def get_sa_campaigns():
 
 @app.route("/api/da/fetch", methods=["POST"])
 def fetch_da_report():
-    """DA 보고서 Playwright로 다운로드"""
+    """DA 보고서 Playwright로 다운로드 — 실제 크롬 프로필 사용 (봇감지 우회)"""
     from playwright.sync_api import sync_playwright
 
     start_date = request.json.get("start", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
     end_date = request.json.get("end", datetime.now().strftime("%Y-%m-%d"))
 
+    # 실제 크롬 프로필 경로
+    chrome_user_data = os.path.expanduser("~/Library/Application Support/Google/Chrome")
+    profile_dir = "Profile 4"  # childy.co.kr
+
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)  # 로그인 필요하므로 보이게
-            context = browser.new_context()
+            # 실제 크롬 프로필로 실행 (기존 로그인 세션 유지, 봇감지 우회)
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=chrome_user_data,
+                channel="chrome",
+                headless=False,
+                args=[f"--profile-directory={profile_dir}"],
+            )
 
-            # 쿠키 로드
-            if os.path.exists(COOKIE_FILE):
-                with open(COOKIE_FILE, "r") as f:
-                    cookies = json.load(f)
-                context.add_cookies(cookies)
-
-            page = context.new_page()
+            page = context.pages[0] if context.pages else context.new_page()
 
             # ads.naver.com 접속
             page.goto("https://ads.naver.com/manage/ad-accounts/1667290/dashboard")
             time.sleep(5)
 
-            # 로그인 필요 여부 확인
+            # 혹시 로그인 필요하면 3분 대기
             if "nid.naver.com" in page.url or "nidlogin" in page.url:
-                # 로그인 페이지에 있음 — 아무것도 건드리지 않고 사용자가 직접 로그인할 때까지 대기
                 print("[DA] 로그인 필요 — 브라우저에서 직접 로그인해주세요 (최대 3분)")
-                
-                # 3분(180초) 동안 기다림 — 사용자가 수동으로 로그인
                 for i in range(180):
                     time.sleep(1)
                     if "ads.naver.com" in page.url and "nid.naver.com" not in page.url:
-                        print(f"[DA] 로그인 감지! ({i+1}초)")
                         break
-
-                time.sleep(3)  # 리다이렉트 안정화 대기
-
-                if "nid.naver.com" in page.url or "nidlogin" in page.url:
-                    browser.close()
-                    return jsonify({"error": "로그인 시간 초과 (3분). 브라우저에서 로그인을 완료해주세요.", "needLogin": True}), 401
-
-            # 로그인 성공 — 쿠키 저장
-            cookies = context.cookies()
-            with open(COOKIE_FILE, "w") as f:
-                json.dump(cookies, f)
+                time.sleep(3)
+                if "nid.naver.com" in page.url:
+                    context.close()
+                    return jsonify({"error": "로그인 시간 초과", "needLogin": True}), 401
 
             # 보고서 페이지 이동
             page.goto("https://ads.naver.com/manage/ad-accounts/1667290/reports")
             time.sleep(3)
 
-            # 보고서 다운로드 시도
-            # ads.naver.com 보고서 페이지에서 CSV 다운로드
-            # 실제 셀렉터는 페이지 구조에 따라 조정 필요
-            
-            # 스크린샷 저장 (디버깅용)
+            # 스크린샷
             screenshot_path = os.path.join(OUTPUT_DIR, "da_report_page.png")
             page.screenshot(path=screenshot_path, full_page=True)
-
-            # 현재 페이지 정보 수집
             page_url = page.url
             page_title = page.title()
 
-            # 페이지에서 다운로드 버튼 찾기 시도
+            # 다운로드 시도
             download_success = False
             downloaded_file = None
 
             try:
-                # 일반적인 다운로드 버튼 패턴 시도
                 download_selectors = [
                     'button:has-text("다운로드")',
                     'button:has-text("내려받기")',
                     'button:has-text("엑셀")',
                     'button:has-text("CSV")',
                     '[data-testid="download"]',
-                    '.download-btn',
                 ]
-
                 for selector in download_selectors:
                     try:
                         if page.locator(selector).count() > 0:
@@ -281,19 +264,18 @@ def fetch_da_report():
                             break
                     except:
                         continue
-            except Exception as e:
+            except:
                 pass
 
-            browser.close()
+            context.close()
 
             if download_success and downloaded_file:
-                # CSV 파싱
                 data = parse_da_csv(downloaded_file)
                 return jsonify({"success": True, "data": data, "file": downloaded_file})
             else:
                 return jsonify({
                     "success": False,
-                    "message": "보고서 다운로드 버튼을 자동으로 찾지 못했어요. 스크린샷을 확인해주세요.",
+                    "message": "보고서 페이지 접근 성공. 스크린샷 확인: output/da_report_page.png",
                     "screenshot": screenshot_path,
                     "pageUrl": page_url,
                     "pageTitle": page_title,
@@ -306,38 +288,42 @@ def fetch_da_report():
 
 @app.route("/api/da/login", methods=["POST"])
 def da_login():
-    """DA 로그인용 — 브라우저 띄워서 수동 로그인, 쿠키 저장"""
+    """DA 로그인용 — 실제 크롬 프로필로 브라우저 띄움 (봇감지 우회)"""
     from playwright.sync_api import sync_playwright
+
+    chrome_user_data = os.path.expanduser("~/Library/Application Support/Google/Chrome")
+    profile_dir = "Profile 4"  # childy.co.kr
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
-            context = browser.new_context()
-            page = context.new_page()
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=chrome_user_data,
+                channel="chrome",
+                headless=False,
+                args=[f"--profile-directory={profile_dir}"],
+            )
 
+            page = context.pages[0] if context.pages else context.new_page()
             page.goto("https://ads.naver.com")
-            time.sleep(2)
+            time.sleep(3)
 
-            # 사용자가 로그인할 때까지 대기 (최대 180초)
-            logged_in = False
-            for _ in range(180):
+            # 이미 로그인되어 있으면 바로 성공
+            if "ads.naver.com/manage" in page.url:
+                context.close()
+                return jsonify({"success": True, "message": "이미 로그인되어 있어요!"})
+
+            # 로그인 대기 (3분)
+            for i in range(180):
                 time.sleep(1)
                 if "ads.naver.com/manage" in page.url:
-                    logged_in = True
-                    break
+                    context.close()
+                    return jsonify({"success": True, "message": "로그인 완료!"})
 
-            if logged_in:
-                # 쿠키 저장
-                cookies = context.cookies()
-                with open(COOKIE_FILE, "w") as f:
-                    json.dump(cookies, f)
-                browser.close()
-                return jsonify({"success": True, "message": "로그인 완료, 쿠키 저장됨"})
-            else:
-                browser.close()
-                return jsonify({"success": False, "message": "로그인 시간 초과 (3분)"}), 408
+            context.close()
+            return jsonify({"success": False, "message": "로그인 시간 초과 (3분)"}), 408
 
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
         return jsonify({"error": str(e)}), 500
 
 
