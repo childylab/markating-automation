@@ -40,7 +40,6 @@ function getDateRange() {
 }
 
 // DA 원본 데이터 (CSV 파싱 전체, 필터링 전)
-let daRawData = [];
 
 function getFilteredDA() {
   if (daRawData.length === 0) return daData;
