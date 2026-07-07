@@ -219,16 +219,25 @@ def fetch_da_report():
             # 로그인 필요하면 3분 대기 (아무것도 안 건드림)
             if "nid.naver.com" in page.url or "nidlogin" in page.url:
                 print("[DA] 로그인 필요 — 열린 브라우저에서 직접 로그인해주세요 (최대 3분)")
+                logged_in = False
                 for i in range(180):
                     time.sleep(1)
                     current = page.url
-                    if "ads.naver.com" in current and "nid.naver.com" not in current:
-                        print(f"[DA] 로그인 성공! ({i+1}초)")
-                        break
-                time.sleep(3)
-                if "nid.naver.com" in page.url:
+                    # 광고 관리 대시보드에 확실히 도착해야 로그인 완료
+                    if "ads.naver.com/manage" in current and "ad-accounts" in current:
+                        # 한번 더 확인 (리다이렉트 도중 오탐 방지)
+                        time.sleep(3)
+                        current2 = page.url
+                        if "ads.naver.com/manage" in current2:
+                            print(f"[DA] 로그인 성공! ({i+1}초)")
+                            logged_in = True
+                            break
+                
+                if not logged_in:
                     context.close()
                     return jsonify({"error": "로그인 시간 초과 (3분)", "needLogin": True}), 401
+                
+                time.sleep(3)  # 페이지 안정화
 
             # 보고서 페이지 이동
             page.goto("https://ads.naver.com/manage/ad-accounts/1667290/reports", wait_until="domcontentloaded")
