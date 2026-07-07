@@ -1,16 +1,8 @@
 // === 데이터 ===
-let saData = [
-  { id: "cmp-sa-01", name: "오디너리홀리데이_PC", impressions: 304, clicks: 8, cost: 1806, purchaseCount: 0, purchaseAmount: 0, cartCount: 0, account: "SA" },
-  { id: "cmp-sa-02", name: "오디너리홀리데이_MO", impressions: 7225, clicks: 915, cost: 192598, purchaseCount: 5, purchaseAmount: 296850, cartCount: 30, account: "SA" },
-  { id: "cmp-sa-03", name: "ODP스마트스토어_쇼핑검색", impressions: 432378, clicks: 2143, cost: 590850, purchaseCount: 39, purchaseAmount: 1281770, cartCount: 280, account: "SA" },
-  { id: "cmp-sa-04", name: "ODP스마트스토어_쇼핑검색_일반키워드", impressions: 267906, clicks: 2376, cost: 722152, purchaseCount: 68, purchaseAmount: 2653280, cartCount: 404, account: "SA" },
-  { id: "cmp-sa-05", name: "차일디_브랜드검색", impressions: 4054, clicks: 1309, cost: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 10, account: "SA" },
-  { id: "cmp-sa-06", name: "유니버셜오버롤_MO_브랜드검색", impressions: 108, clicks: 47, cost: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0, account: "SA" },
-];
+let saData = [];
 
-let daData = [
-  { name: "ODP_ADVoost_26년_상시운영", impressions: 0, clicks: 0, cost: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0, account: "DA", daily: [], note: "CSV 업로드로 데이터를 반영해주세요" },
-];
+let daData = [];
+let daRawData = [];
 
 // === 상태 ===
 let currentChannel = "SA";
@@ -108,8 +100,16 @@ function renderTable() {
   const data = getData();
   const tbody = document.querySelector("#mainTable tbody");
 
-  if (!data.length || (data.length === 1 && data[0].cost === 0 && data[0].note)) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">${data[0]?.note || "데이터 없음"}</td></tr>`;
+  // 데이터 없으면 로드 버튼 표시
+  if (!data.length) {
+    const msg = currentChannel === "SA"
+      ? `<button class="btn-load" id="btnLoadData">데이터 로드</button><p class="load-hint">기간을 선택하고 데이터를 불러오세요</p>`
+      : `<p class="load-hint">CSV 파일을 업로드해주세요</p>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11"><div class="load-area">${msg}</div></td></tr>`;
+
+    if (currentChannel === "SA") {
+      document.getElementById("btnLoadData")?.addEventListener("click", loadSAData);
+    }
     return;
   }
 
@@ -123,7 +123,6 @@ function renderTable() {
     const impToPurchase = c.impressions && c.purchaseCount ? ((c.purchaseCount / c.impressions) * 100).toFixed(3) + "%" : "-";
     const clkToPurchase = c.clicks && c.purchaseCount ? ((c.purchaseCount / c.clicks) * 100).toFixed(1) + "%" : "-";
     const rowId = `daily-${currentChannel}-${idx}`;
-    const hasDaily = c.daily && c.daily.length > 0;
 
     const row = document.createElement("tr");
     row.className = "campaign-row-clickable";
@@ -144,52 +143,21 @@ function renderTable() {
     row.addEventListener("click", () => toggleDaily(rowId, c));
     tbody.appendChild(row);
 
+    // 일별 데이터가 이미 있으면 바로 넣기
     const dailyRow = document.createElement("tr");
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
-    dailyRow.innerHTML = `<td colspan="11" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+    if (c.daily && c.daily.length > 0) {
+      dailyRow.innerHTML = `<td colspan="11" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
+      dailyRow.dataset.loaded = "true";
+    } else {
+      dailyRow.innerHTML = `<td colspan="11" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+    }
     tbody.appendChild(dailyRow);
   });
 }
 
-async function toggleDaily(rowId, campaign) {
-  const row = document.getElementById(rowId);
-  const icon = document.getElementById("icon-" + rowId);
-  if (!row) return;
-
-  if (!row.classList.contains("hidden")) {
-    row.classList.add("hidden");
-    if (icon) icon.classList.remove("open");
-    return;
-  }
-  row.classList.remove("hidden");
-  if (icon) icon.classList.add("open");
-
-  if (row.dataset.loaded === "true") return;
-
-  let dailyData = [];
-
-  if (currentChannel === "DA" && campaign.daily && campaign.daily.length > 0) {
-    dailyData = campaign.daily;
-  } else if (currentChannel === "SA" && campaign.id) {
-    try {
-      const { start, end } = getDateRange();
-      const s = start.toISOString().split("T")[0];
-      const e = end.toISOString().split("T")[0];
-      const res = await fetch(`${API}/api/sa/campaigns/daily?id=${campaign.id}&start=${s}&end=${e}`);
-      if (res.ok) dailyData = await res.json();
-    } catch (err) {
-      row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">서버 연결 실패</div>';
-      return;
-    }
-  }
-
-  if (dailyData.length === 0) {
-    row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">일별 데이터 없음</div>';
-    row.dataset.loaded = "true";
-    return;
-  }
-
+function buildDailyHtml(dailyData) {
   let html = `<table class="daily-table">
     <thead><tr>
       <th>날짜</th><th class="num">광고비</th><th class="num">노출</th><th class="num">클릭</th>
@@ -211,7 +179,48 @@ async function toggleDaily(rowId, campaign) {
   });
 
   html += "</tbody></table>";
-  row.querySelector(".daily-cell").innerHTML = html;
+  return html;
+}
+
+async function toggleDaily(rowId, campaign) {
+  const row = document.getElementById(rowId);
+  const icon = document.getElementById("icon-" + rowId);
+  if (!row) return;
+
+  if (!row.classList.contains("hidden")) {
+    row.classList.add("hidden");
+    if (icon) icon.classList.remove("open");
+    return;
+  }
+  row.classList.remove("hidden");
+  if (icon) icon.classList.add("open");
+
+  if (row.dataset.loaded === "true") return;
+
+  let dailyData = [];
+
+  if (campaign.daily && campaign.daily.length > 0) {
+    dailyData = campaign.daily;
+  } else if (currentChannel === "SA" && campaign.id) {
+    try {
+      const { start, end } = getDateRange();
+      const s = start.toISOString().split("T")[0];
+      const e = end.toISOString().split("T")[0];
+      const res = await fetch(`${API}/api/sa/campaigns/daily?id=${campaign.id}&start=${s}&end=${e}`);
+      if (res.ok) dailyData = await res.json();
+    } catch (err) {
+      row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">서버 연결 실패</div>';
+      return;
+    }
+  }
+
+  if (dailyData.length === 0) {
+    row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">일별 데이터 없음</div>';
+    row.dataset.loaded = "true";
+    return;
+  }
+
+  row.querySelector(".daily-cell").innerHTML = buildDailyHtml(dailyData);
   row.dataset.loaded = "true";
 }
 
@@ -258,9 +267,8 @@ function setStatus(msg, type = "") {
 // 새로고침 버튼
 document.getElementById("btnRefresh").addEventListener("click", async () => {
   if (currentChannel === "SA") {
-    await refreshSA();
+    await loadSAData();
   } else {
-    // DA: 기간 필터 적용해서 다시 렌더
     render();
     setStatus("DA 기간 필터 적용 완료", "success");
   }
@@ -291,6 +299,75 @@ async function refreshSA() {
     setStatus("SA 실패 — 서버(python server.py) 실행 필요", "error");
   }
   btn.disabled = false;
+}
+
+async function loadSAData() {
+  const { start, end } = getDateRange();
+  const s = start.toISOString().split("T")[0];
+  const e = end.toISOString().split("T")[0];
+
+  // 프로그레스바 표시
+  showProgress("캠페인 목록 가져오는 중...", 0);
+
+  try {
+    // 1. 캠페인 목록 + 합산 데이터
+    const res = await fetch(`${API}/api/sa/campaigns?start=${s}&end=${e}`);
+    if (!res.ok) throw new Error("서버 연결 실패");
+    const data = await res.json();
+
+    saData = data.map((c) => ({
+      id: c.id, name: c.name, impressions: c.impressions,
+      clicks: c.clicks, cost: c.cost,
+      purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
+      cartCount: c.cartCount || 0, account: "SA", daily: [],
+    }));
+
+    showProgress(`캠페인 ${saData.length}개 로드 완료. 일별 데이터 가져오는 중...`, 30);
+
+    // 2. 각 캠페인별 일별 데이터
+    const activeCampaigns = saData.filter((c) => c.impressions > 0 || c.clicks > 0 || c.cost > 0);
+    for (let i = 0; i < activeCampaigns.length; i++) {
+      const c = activeCampaigns[i];
+      const pct = 30 + Math.round(((i + 1) / activeCampaigns.length) * 70);
+      showProgress(`일별 데이터: ${c.name} (${i + 1}/${activeCampaigns.length})`, pct);
+
+      try {
+        const dRes = await fetch(`${API}/api/sa/campaigns/daily?id=${c.id}&start=${s}&end=${e}`);
+        if (dRes.ok) {
+          c.daily = await dRes.json();
+        }
+      } catch (err) {
+        // 개별 실패는 무시
+      }
+    }
+
+    hideProgress();
+    render();
+    setStatus(`SA 데이터 로드 완료 — ${saData.length}개 캠페인, 일별 데이터 포함`, "success");
+  } catch (err) {
+    hideProgress();
+    setStatus("SA 데이터 로드 실패 — 서버(python server.py) 실행 필요", "error");
+  }
+}
+
+function showProgress(msg, pct) {
+  let bar = document.getElementById("progressBar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "progressBar";
+    bar.className = "progress-bar";
+    document.querySelector(".table-section").prepend(bar);
+  }
+  bar.innerHTML = `
+    <div class="progress-text">${msg}</div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+  `;
+  bar.classList.remove("hidden");
+}
+
+function hideProgress() {
+  const bar = document.getElementById("progressBar");
+  if (bar) bar.classList.add("hidden");
 }
 
 // DA CSV 업로드
