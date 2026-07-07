@@ -1,0 +1,289 @@
+/* === TDS Design Tokens === */
+:root {
+  --tds-blue: #3182f6;
+  --tds-blue-pressed: #1b64da;
+  --tds-text: #191f28;
+  --tds-text-secondary: #6b7684;
+  --tds-text-tertiary: #8b95a1;
+  --tds-background: #f2f4f6;
+  --tds-surface: #ffffff;
+  --tds-line: #e5e8eb;
+  --tds-error: #f04452;
+  --tds-success: #00a661;
+  --tds-radius: 16px;
+  --tds-radius-sm: 12px;
+}
+
+/* === Reset === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--tds-text);
+  background: var(--tds-background);
+  min-height: 100vh;
+  padding-bottom: 40px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* === Typography === */
+.title-large {
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.title {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.body {
+  font-size: 16px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+.caption {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tds-text-secondary);
+}
+
+.text-secondary {
+  color: var(--tds-text-secondary);
+}
+
+/* === Navigation === */
+.navigation {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--tds-surface);
+  border-bottom: 1px solid var(--tds-line);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.nav-period {
+  font-size: 13px;
+  color: var(--tds-text-secondary);
+  background: var(--tds-background);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* === Top Section === */
+.top-section {
+  padding: 24px 20px 16px;
+}
+
+.top-section .body {
+  margin-top: 6px;
+}
+
+/* === KPI Section === */
+.kpi-section {
+  padding: 0 20px 24px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kpi-card {
+  background: var(--tds-surface);
+  border-radius: var(--tds-radius);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--tds-text-secondary);
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tds-text);
+}
+
+/* === Tab Section === */
+.tab-section {
+  padding: 0 20px 16px;
+}
+
+.tab-group {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+  border: none;
+  background: var(--tds-surface);
+  color: var(--tds-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.tab.active {
+  background: var(--tds-text);
+  color: var(--tds-surface);
+}
+
+.tab:active {
+  transform: scale(0.96);
+}
+
+/* === List Section === */
+.list-section {
+  padding: 0 20px 24px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.list-header-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.list-header-action {
+  font-size: 13px;
+  color: var(--tds-blue);
+  cursor: pointer;
+}
+
+.list-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* === List Row (Campaign Card) === */
+.campaign-row {
+  background: var(--tds-surface);
+  border-radius: var(--tds-radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.campaign-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.campaign-name {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.campaign-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.badge-shopping {
+  background: #e8f7ff;
+  color: #0687f0;
+}
+
+.badge-brand {
+  background: #fff0e6;
+  color: #e57300;
+}
+
+.badge-webiste {
+  background: #e6f9ee;
+  color: #00875a;
+}
+
+.campaign-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--tds-text-tertiary);
+}
+
+.metric-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.metric-value.highlight {
+  color: var(--tds-blue);
+}
+
+/* === Info Section === */
+.info-section {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-card {
+  background: var(--tds-surface);
+  border-radius: var(--tds-radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* === Responsive === */
+@media (min-width: 480px) {
+  body {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
