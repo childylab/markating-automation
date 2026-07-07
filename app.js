@@ -218,6 +218,18 @@ function render() {
   renderTable(document.getElementById("daTable"), daData);
 }
 
+function renderDAOnly() {
+  renderKPI();
+  renderSummary(document.getElementById("daSummary"), daData);
+  renderTable(document.getElementById("daTable"), daData);
+}
+
+function renderSAOnly() {
+  renderKPI();
+  renderSummary(document.getElementById("saSummary"), saData);
+  renderTable(document.getElementById("saTable"), saData);
+}
+
 // === 이벤트 ===
 document.getElementById("periodSelect").addEventListener("change", (e) => {
   currentPeriod = e.target.value;
@@ -262,7 +274,7 @@ document.getElementById("btnRefreshSA").addEventListener("click", async () => {
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
       cartCount: c.cartCount || 0, account: "SA",
     }));
-    render();
+    renderSAOnly();
     setStatus(`SA 갱신 완료 — ${data.length}개 캠페인`, "success");
   } catch (e) {
     setStatus("SA 실패 — 서버(python server.py)가 실행 중인지 확인하세요", "error");
@@ -286,7 +298,7 @@ document.getElementById("daFileInput").addEventListener("change", (e) => {
       const parsed = parseNaverDaCsv(text);
       if (parsed.length > 0) {
         daData = parsed;
-        render();
+        renderDAOnly();
         setStatus(`DA 데이터 반영 완료 — ${parsed.length}일치 데이터`, "success");
       } else {
         setStatus("CSV에서 데이터를 읽지 못했어요. 파일 형식을 확인해주세요.", "error");
