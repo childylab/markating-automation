@@ -208,7 +208,7 @@ async function toggleDaily(rowId, campaign) {
       const { start, end } = getDateRange();
       const s = start.toISOString().split("T")[0];
       const e = end.toISOString().split("T")[0];
-      const res = await fetch(`${API}/api/sa/campaigns/daily?id=${campaign.id}&start=${s}&end=${e}`);
+      const res = await fetch(`${API}/naver-sa-campaigns/daily?id=${campaign.id}&start=${s}&end=${e}`);
       if (res.ok) dailyData = await res.json();
     } catch (err) {
       row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">서버 연결 실패</div>';
@@ -270,7 +270,7 @@ document.getElementById("periodSelect").addEventListener("change", (e) => {
 document.getElementById("applyDate").addEventListener("click", render);
 
 // === 서버 연동 ===
-const API = "http://localhost:5001";
+const API = "https://n8n.childylab.com/webhook";
 
 function setStatus(msg, type = "") {
   const el = document.getElementById("statusBar");
@@ -299,7 +299,7 @@ async function refreshSA() {
   const e = end.toISOString().split("T")[0];
 
   try {
-    const res = await fetch(`${API}/api/sa/campaigns?start=${s}&end=${e}`);
+    const res = await fetch(`${API}/naver-sa-campaigns?start=${s}&end=${e}`);
     if (!res.ok) throw new Error("실패");
     const data = await res.json();
     saData = data.map((c) => ({
@@ -326,7 +326,7 @@ async function loadSAData() {
 
   try {
     // 1. 캠페인 목록 + 합산 데이터
-    const res = await fetch(`${API}/api/sa/campaigns?start=${s}&end=${e}`);
+    const res = await fetch(`${API}/naver-sa-campaigns?start=${s}&end=${e}`);
     if (!res.ok) throw new Error("서버 연결 실패");
     const data = await res.json();
 
@@ -347,7 +347,7 @@ async function loadSAData() {
       showProgress(`일별 데이터: ${c.name} (${i + 1}/${activeCampaigns.length})`, pct);
 
       try {
-        const dRes = await fetch(`${API}/api/sa/campaigns/daily?id=${c.id}&start=${s}&end=${e}`);
+        const dRes = await fetch(`${API}/naver-sa-campaigns/daily?id=${c.id}&start=${s}&end=${e}`);
         if (dRes.ok) {
           c.daily = await dRes.json();
         }
