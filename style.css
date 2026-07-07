@@ -80,6 +80,27 @@ body {
   cursor: pointer;
 }
 
+.btn-refresh, .btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text2);
+  transition: all 0.15s;
+}
+
+.btn-refresh:hover { border-color: var(--blue); color: var(--blue); }
+.btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-upload { color: var(--purple); }
+.btn-upload:hover { border-color: var(--purple); }
+
 /* === Channel Tabs === */
 .channel-tabs {
   display: flex;
@@ -139,31 +160,6 @@ body {
 .kpi-label { font-size: 12px; color: var(--text2); }
 .kpi-value { font-size: 20px; font-weight: 700; }
 
-/* === Actions === */
-.actions-section {
-  padding: 0 24px 12px;
-  display: flex;
-  gap: 8px;
-}
-
-.btn-action {
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--surface);
-  color: var(--text2);
-  transition: all 0.15s;
-}
-
-.btn-action:hover { border-color: var(--blue); color: var(--blue); }
-.btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.da-upload { color: var(--purple); }
-.da-upload:hover { border-color: var(--purple); }
-
 /* === Table === */
 .table-section { padding: 0 24px 40px; }
 
@@ -207,6 +203,23 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+}
+
+.toggle-icon {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--text3);
+  margin-right: 8px;
+  transition: transform 0.15s;
+  vertical-align: middle;
+}
+
+.toggle-icon.open {
+  transform: rotate(90deg);
+  border-left-color: var(--blue);
 }
 
 .roas-high { color: var(--green); font-weight: 700; }

@@ -98,7 +98,7 @@ function renderTable() {
     const row = document.createElement("tr");
     row.className = "campaign-row-clickable";
     row.innerHTML = `
-      <td class="campaign-name">${hasDaily || currentChannel === "SA" ? "▶ " : ""}${c.name}</td>
+      <td class="campaign-name"><span class="toggle-icon" id="icon-${rowId}"></span>${c.name}</td>
       <td class="num">${fmtWon(c.cost)}</td>
       <td class="num">${fmt(c.impressions)}</td>
       <td class="num">${fmt(c.clicks)}</td>
@@ -124,13 +124,16 @@ function renderTable() {
 
 async function toggleDaily(rowId, campaign) {
   const row = document.getElementById(rowId);
+  const icon = document.getElementById("icon-" + rowId);
   if (!row) return;
 
   if (!row.classList.contains("hidden")) {
     row.classList.add("hidden");
+    if (icon) icon.classList.remove("open");
     return;
   }
   row.classList.remove("hidden");
+  if (icon) icon.classList.add("open");
 
   if (row.dataset.loaded === "true") return;
 
@@ -188,6 +191,7 @@ function render() {
 
   // SA일 때 업로드 버튼 숨기고, DA일 때 표시
   document.getElementById("btnUploadWrap").classList.toggle("hidden", currentChannel === "SA");
+  // SA일 때 새로고침은 API, DA일 때도 표시 (CSV 재업로드 용도)
 }
 
 // === 이벤트 ===

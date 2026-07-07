@@ -27,6 +27,14 @@
           <input type="date" id="endDate" class="date-input">
           <button class="btn-sm" id="applyDate">적용</button>
         </div>
+        <button class="btn-refresh" id="btnRefresh" title="데이터 새로고침">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+        </button>
+        <label class="btn-upload hidden" id="btnUploadWrap" title="DA CSV 업로드">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          CSV
+          <input type="file" id="daFileInput" accept=".csv" style="display:none">
+        </label>
       </div>
     </div>
   </header>
@@ -82,15 +90,6 @@
         <span class="kpi-value" id="kpiCpc">-</span>
       </div>
     </div>
-  </section>
-
-  <!-- Actions -->
-  <section class="actions-section">
-    <button class="btn-action" id="btnRefresh">↻ 데이터 새로고침</button>
-    <label class="btn-action da-upload hidden" id="btnUploadWrap">
-      📂 CSV 업로드
-      <input type="file" id="daFileInput" accept=".csv" style="display:none">
-    </label>
   </section>
 
   <!-- Campaign Table -->
