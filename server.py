@@ -60,6 +60,7 @@ def get_purchase_conversions():
     """
     stat-reports에서 AD_CONVERSION_DETAIL 리포트를 가져와서
     'purchase' 전환만 캠페인별로 합산하여 반환
+    여러 날짜의 리포트를 모두 다운받아 30일치 합산
     """
     import requests as req
 
@@ -73,40 +74,45 @@ def get_purchase_conversions():
     if not isinstance(reports, list):
         return {}
 
-    # 가장 최신 AD_CONVERSION_DETAIL 리포트 찾기
-    conv_reports = [rp for rp in reports if rp.get("reportTp") == "AD_CONVERSION_DETAIL" and rp.get("status") == "BUILT"]
+    # 빌드 완료된 AD_CONVERSION_DETAIL 리포트 전부 (최대 30개)
+    conv_reports = [
+        rp for rp in reports
+        if rp.get("reportTp") == "AD_CONVERSION_DETAIL" and rp.get("status") == "BUILT"
+    ]
+
     if not conv_reports:
         return {}
 
-    # downloadUrl로 다운로드
-    download_url = conv_reports[0].get("downloadUrl", "")
-    if not download_url:
-        return {}
-
-    r = req.get(download_url, headers=sa_header("GET", "/report-download"))
-    if r.status_code != 200:
-        return {}
-
-    # 탭 구분 파싱, purchase만 필터
-    # 컬럼: 날짜 | CID | 캠페인ID | 광고그룹ID | 키워드ID | 소재ID | 채널ID | 시간 | 전환경로 | 매체ID | 디바이스 | 전환경로구분 | 전환유형 | 전환수 | 전환금액
+    # 모든 리포트 다운로드 후 purchase만 캠페인별 합산
     purchase_by_campaign = {}
 
-    lines = r.content.decode("utf-8", errors="replace").strip().split("\n")
-    for line in lines:
-        cols = line.split("\t")
-        if len(cols) < 15:
+    for rp in conv_reports[:30]:  # 최대 30일치
+        download_url = rp.get("downloadUrl", "")
+        if not download_url:
             continue
 
-        campaign_id = cols[2].strip()
-        conv_type = cols[12].strip() if len(cols) > 12 else ""
-        conv_count = int(cols[13].strip()) if len(cols) > 13 and cols[13].strip().isdigit() else 0
-        conv_amount = int(cols[14].strip()) if len(cols) > 14 and cols[14].strip().isdigit() else 0
+        r = req.get(download_url, headers=sa_header("GET", "/report-download"))
+        if r.status_code != 200:
+            continue
 
-        if conv_type == "purchase":
-            if campaign_id not in purchase_by_campaign:
-                purchase_by_campaign[campaign_id] = {"count": 0, "amount": 0}
-            purchase_by_campaign[campaign_id]["count"] += conv_count
-            purchase_by_campaign[campaign_id]["amount"] += conv_amount
+        lines = r.content.decode("utf-8", errors="replace").strip().split("\n")
+        for line in lines:
+            cols = line.split("\t")
+            if len(cols) < 15:
+                continue
+
+            campaign_id = cols[2].strip()
+            conv_type = cols[12].strip() if len(cols) > 12 else ""
+            conv_count = int(cols[13].strip()) if len(cols) > 13 and cols[13].strip().isdigit() else 0
+            conv_amount = int(cols[14].strip()) if len(cols) > 14 and cols[14].strip().isdigit() else 0
+
+            if conv_type == "purchase":
+                if campaign_id not in purchase_by_campaign:
+                    purchase_by_campaign[campaign_id] = {"count": 0, "amount": 0}
+                purchase_by_campaign[campaign_id]["count"] += conv_count
+                purchase_by_campaign[campaign_id]["amount"] += conv_amount
+
+        time.sleep(0.2)  # rate limit
 
     return purchase_by_campaign
 
