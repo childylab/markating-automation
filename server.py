@@ -192,8 +192,9 @@ def get_sa_campaigns():
 
 @app.route("/api/sa/campaigns/daily", methods=["GET"])
 def get_sa_campaigns_daily():
-    """SA 캠페인별 일별 성과 데이터"""
+    """SA 캠페인별 일별 성과 데이터 — 하루씩 반복 호출"""
     import requests as req
+    from datetime import date as dt_date
 
     campaign_id = request.args.get("id")
     start_date = request.args.get("start", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
@@ -202,49 +203,49 @@ def get_sa_campaigns_daily():
     if not campaign_id:
         return jsonify({"error": "id 파라미터 필요"}), 400
 
-    uri = "/stats"
-    fields = json.dumps(["impCnt", "clkCnt", "salesAmt", "ctr", "cpc", "ccnt", "convAmt"])
-    time_range = json.dumps({"since": start_date, "until": end_date})
-
-    params = {
-        "ids": [campaign_id],
-        "fields": fields,
-        "timeRange": time_range,
-        "breakdown": "daily",
-    }
-
-    r = req.get(SA_BASE_URL + uri, params=params, headers=sa_header("GET", uri))
-    if r.status_code != 200:
-        return jsonify({"error": "조회 실패"}), 500
-
-    result = r.json()
-    data = []
-    if isinstance(result, dict) and "data" in result:
-        data = result["data"]
-    elif isinstance(result, list):
-        data = result
-
-    # 일별 purchase 데이터도 가져오기
+    # 일별 purchase 데이터
     purchase_daily = get_purchase_conversions_daily(campaign_id)
 
-    output = []
-    for d in data:
-        date = d.get("statDt", "")
-        pdata = purchase_daily.get(date, {"purchaseCount": 0, "purchaseAmount": 0, "cartCount": 0})
-        output.append({
-            "date": date,
-            "cost": d.get("salesAmt", 0),
-            "impressions": d.get("impCnt", 0),
-            "clicks": d.get("clkCnt", 0),
-            "ctr": d.get("ctr", 0),
-            "conversions": d.get("ccnt", 0),
-            "convValue": d.get("convAmt", 0),
-            "purchaseCount": pdata["purchaseCount"],
-            "purchaseAmount": pdata["purchaseAmount"],
-            "cartCount": pdata["cartCount"],
-        })
+    # 하루씩 반복 호출
+    uri = "/stats"
+    fields = json.dumps(["impCnt", "clkCnt", "salesAmt", "ctr", "ccnt", "convAmt"])
 
-    output.sort(key=lambda x: x["date"], reverse=True)
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    output = []
+
+    current = end
+    while current >= start:
+        day_str = current.strftime("%Y-%m-%d")
+        params = {
+            "ids": [campaign_id],
+            "fields": fields,
+            "timeRange": json.dumps({"since": day_str, "until": day_str}),
+        }
+        r = req.get(SA_BASE_URL + uri, params=params, headers=sa_header("GET", uri))
+        if r.status_code == 200:
+            result = r.json()
+            data_list = result.get("data", []) if isinstance(result, dict) else result
+            for d in data_list:
+                if d.get("impCnt", 0) > 0 or d.get("clkCnt", 0) > 0 or d.get("salesAmt", 0) > 0:
+                    date_key = current.strftime("%Y%m%d")
+                    pdata = purchase_daily.get(date_key, {"purchaseCount": 0, "purchaseAmount": 0, "cartCount": 0})
+                    output.append({
+                        "date": day_str,
+                        "cost": d.get("salesAmt", 0),
+                        "impressions": d.get("impCnt", 0),
+                        "clicks": d.get("clkCnt", 0),
+                        "ctr": d.get("ctr", 0),
+                        "conversions": d.get("ccnt", 0),
+                        "convValue": d.get("convAmt", 0),
+                        "purchaseCount": pdata["purchaseCount"],
+                        "purchaseAmount": pdata["purchaseAmount"],
+                        "cartCount": pdata["cartCount"],
+                    })
+
+        current -= timedelta(days=1)
+        time.sleep(0.2)
+
     return jsonify(output)
 
 
