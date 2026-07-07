@@ -102,13 +102,16 @@ function renderTable() {
 
   // 데이터 없으면 로드 버튼 표시
   if (!data.length) {
-    const msg = currentChannel === "SA"
-      ? `<button class="btn-load" id="btnLoadData">데이터 로드</button><p class="load-hint">기간을 선택하고 데이터를 불러오세요</p>`
-      : `<p class="load-hint">CSV 파일을 업로드해주세요</p>`;
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="11"><div class="load-area">${msg}</div></td></tr>`;
-
     if (currentChannel === "SA") {
-      document.getElementById("btnLoadData")?.addEventListener("click", loadSAData);
+      tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
+        <button class="btn-load" id="btnLoadData">데이터 로드</button>
+        <span class="load-hint">기간을 선택하고 데이터를 불러오세요</span>
+      </td></tr>`;
+      document.getElementById("btnLoadData").addEventListener("click", loadSAData);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
+        <span class="load-hint">CSV 파일을 업로드해주세요</span>
+      </td></tr>`;
     }
     return;
   }
