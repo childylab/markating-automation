@@ -388,6 +388,73 @@ body {
   font-size: 14px;
 }
 
+/* === Action Section (Bottom CTA) === */
+.action-section {
+  padding: 24px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--tds-radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+.action-btn.primary {
+  background: var(--tds-blue);
+  color: white;
+}
+
+.action-btn.primary:active {
+  background: var(--tds-blue-pressed);
+}
+
+.action-btn.secondary {
+  background: var(--tds-text);
+  color: white;
+}
+
+.action-btn.secondary:active {
+  background: #333d4b;
+}
+
+.action-btn.tertiary {
+  background: var(--tds-surface);
+  color: var(--tds-text-secondary);
+  border: 1px solid var(--tds-line);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-status {
+  font-size: 13px;
+  color: var(--tds-text-secondary);
+  text-align: center;
+  min-height: 20px;
+}
+
+.action-status.error {
+  color: var(--tds-error);
+}
+
+.action-status.success {
+  color: var(--tds-success);
+}
+
 /* === Responsive === */
 @media (min-width: 480px) {
   body {

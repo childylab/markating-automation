@@ -363,3 +363,110 @@ document.getElementById("sortToggle").addEventListener("click", () => {
 
 // === 초기 렌더 ===
 render();
+
+// === 서버 연동 (localhost:5000) ===
+const API_BASE = "http://localhost:5000";
+
+function setStatus(msg, type = "") {
+  const el = document.getElementById("actionStatus");
+  el.textContent = msg;
+  el.className = "action-status " + type;
+}
+
+// SA 데이터 새로고침
+document.getElementById("btnRefreshSA").addEventListener("click", async () => {
+  const btn = document.getElementById("btnRefreshSA");
+  btn.disabled = true;
+  setStatus("SA 데이터를 가져오고 있어요...");
+
+  const { start, end } = getDateRange();
+  const startStr = start.toISOString().split("T")[0];
+  const endStr = end.toISOString().split("T")[0];
+
+  try {
+    const res = await fetch(`${API_BASE}/api/sa/campaigns?start=${startStr}&end=${endStr}`);
+    if (!res.ok) throw new Error("SA API 호출 실패");
+
+    const data = await res.json();
+
+    // 기존 SA 데이터 교체
+    const daOnly = allCampaigns.filter((c) => c.account === "DA");
+    allCampaigns.length = 0;
+    data.forEach((c) => allCampaigns.push(c));
+    daOnly.forEach((c) => allCampaigns.push(c));
+
+    render();
+    setStatus(`SA 데이터 갱신 완료 (${data.length}개 캠페인)`, "success");
+  } catch (e) {
+    setStatus("SA 데이터 가져오기 실패. 서버가 실행 중인지 확인해주세요.", "error");
+    console.error(e);
+  }
+
+  btn.disabled = false;
+});
+
+// DA 데이터 불러오기
+document.getElementById("btnFetchDA").addEventListener("click", async () => {
+  const btn = document.getElementById("btnFetchDA");
+  btn.disabled = true;
+  setStatus("DA 보고서를 다운로드하고 있어요... 브라우저가 열릴 수 있어요.");
+
+  const { start, end } = getDateRange();
+  const startStr = start.toISOString().split("T")[0];
+  const endStr = end.toISOString().split("T")[0];
+
+  try {
+    const res = await fetch(`${API_BASE}/api/da/fetch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start: startStr, end: endStr }),
+    });
+
+    const result = await res.json();
+
+    if (res.status === 401) {
+      setStatus("네이버 로그인이 필요해요. '네이버 로그인' 버튼을 눌러주세요.", "error");
+    } else if (result.success && result.data) {
+      // DA 데이터 교체
+      const saOnly = allCampaigns.filter((c) => c.account === "SA");
+      allCampaigns.length = 0;
+      saOnly.forEach((c) => allCampaigns.push(c));
+      result.data.forEach((c) => allCampaigns.push(c));
+
+      render();
+      setStatus(`DA 데이터 갱신 완료 (${result.data.length}개 캠페인)`, "success");
+    } else if (result.needManualSetup) {
+      setStatus("보고서 페이지 구조 확인 필요. 스크린샷: output/da_report_page.png", "error");
+    } else {
+      setStatus(result.message || result.error || "DA 데이터 가져오기 실패", "error");
+    }
+  } catch (e) {
+    setStatus("서버 연결 실패. python server.py를 먼저 실행해주세요.", "error");
+    console.error(e);
+  }
+
+  btn.disabled = false;
+});
+
+// 네이버 로그인 (DA 최초설정)
+document.getElementById("btnLoginDA").addEventListener("click", async () => {
+  const btn = document.getElementById("btnLoginDA");
+  btn.disabled = true;
+  setStatus("브라우저가 열려요. 네이버 로그인을 완료해주세요 (3분 내)...");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/da/login`, { method: "POST" });
+    const result = await res.json();
+
+    if (result.success) {
+      setStatus("로그인 완료! 이제 'DA 데이터 불러오기'를 사용할 수 있어요.", "success");
+    } else {
+      setStatus(result.message || "로그인 실패", "error");
+    }
+  } catch (e) {
+    setStatus("서버 연결 실패. python server.py를 먼저 실행해주세요.", "error");
+    console.error(e);
+  }
+
+  btn.disabled = false;
+});
