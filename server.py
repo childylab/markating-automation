@@ -192,24 +192,21 @@ def get_sa_campaigns():
 
 @app.route("/api/da/fetch", methods=["POST"])
 def fetch_da_report():
-    """DA 보고서 Playwright로 다운로드 — 실제 크롬 프로필 사용 (봇감지 우회)"""
+    """DA 보고서 Playwright로 다운로드 — 크롬 프로필 복사본 사용 (봇감지 우회)"""
     from playwright.sync_api import sync_playwright
 
     start_date = request.json.get("start", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
     end_date = request.json.get("end", datetime.now().strftime("%Y-%m-%d"))
 
-    # 실제 크롬 프로필 경로
-    chrome_user_data = os.path.expanduser("~/Library/Application Support/Google/Chrome")
-    profile_dir = "Profile 4"  # childy.co.kr
+    # 복사해둔 크롬 프로필 (크롬이 열려있어도 충돌 안 남)
+    profile_path = os.path.join(BASE_DIR, ".chrome-profile")
 
     try:
         with sync_playwright() as p:
-            # 실제 크롬 프로필로 실행 (기존 로그인 세션 유지, 봇감지 우회)
             context = p.chromium.launch_persistent_context(
-                user_data_dir=chrome_user_data,
+                user_data_dir=profile_path,
                 channel="chrome",
                 headless=False,
-                args=[f"--profile-directory={profile_dir}"],
             )
 
             page = context.pages[0] if context.pages else context.new_page()
@@ -218,7 +215,7 @@ def fetch_da_report():
             page.goto("https://ads.naver.com/manage/ad-accounts/1667290/dashboard")
             time.sleep(5)
 
-            # 혹시 로그인 필요하면 3분 대기
+            # 로그인 필요하면 3분 대기
             if "nid.naver.com" in page.url or "nidlogin" in page.url:
                 print("[DA] 로그인 필요 — 브라우저에서 직접 로그인해주세요 (최대 3분)")
                 for i in range(180):
@@ -288,19 +285,17 @@ def fetch_da_report():
 
 @app.route("/api/da/login", methods=["POST"])
 def da_login():
-    """DA 로그인용 — 실제 크롬 프로필로 브라우저 띄움 (봇감지 우회)"""
+    """DA 로그인용 — 크롬 프로필 복사본으로 브라우저 띄움"""
     from playwright.sync_api import sync_playwright
 
-    chrome_user_data = os.path.expanduser("~/Library/Application Support/Google/Chrome")
-    profile_dir = "Profile 4"  # childy.co.kr
+    profile_path = os.path.join(BASE_DIR, ".chrome-profile")
 
     try:
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
-                user_data_dir=chrome_user_data,
+                user_data_dir=profile_path,
                 channel="chrome",
                 headless=False,
-                args=[f"--profile-directory={profile_dir}"],
             )
 
             page = context.pages[0] if context.pages else context.new_page()
