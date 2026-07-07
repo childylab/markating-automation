@@ -213,22 +213,25 @@ def fetch_da_report():
 
             # ads.naver.com 접속
             page.goto("https://ads.naver.com/manage/ad-accounts/1667290/dashboard")
-            time.sleep(3)
+            time.sleep(5)
 
             # 로그인 필요 여부 확인
             if "nid.naver.com" in page.url or "nidlogin" in page.url:
-                # 로그인 페이지로 갔으면 사용자에게 수동 로그인 유도
-                page.goto("https://nid.naver.com/nidlogin.login?url=https://ads.naver.com/manage/ad-accounts/1667290/dashboard")
+                # 로그인 페이지에 있음 — 아무것도 건드리지 않고 사용자가 직접 로그인할 때까지 대기
+                print("[DA] 로그인 필요 — 브라우저에서 직접 로그인해주세요 (최대 3분)")
                 
-                # 로그인 완료 대기 (최대 120초)
-                for _ in range(120):
+                # 3분(180초) 동안 기다림 — 사용자가 수동으로 로그인
+                for i in range(180):
                     time.sleep(1)
-                    if "ads.naver.com" in page.url:
+                    if "ads.naver.com" in page.url and "nid.naver.com" not in page.url:
+                        print(f"[DA] 로그인 감지! ({i+1}초)")
                         break
 
-                if "ads.naver.com" not in page.url:
+                time.sleep(3)  # 리다이렉트 안정화 대기
+
+                if "nid.naver.com" in page.url or "nidlogin" in page.url:
                     browser.close()
-                    return jsonify({"error": "로그인 시간 초과. 브라우저에서 로그인을 완료해주세요.", "needLogin": True}), 401
+                    return jsonify({"error": "로그인 시간 초과 (3분). 브라우저에서 로그인을 완료해주세요.", "needLogin": True}), 401
 
             # 로그인 성공 — 쿠키 저장
             cookies = context.cookies()
