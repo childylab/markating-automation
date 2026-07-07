@@ -47,8 +47,38 @@ function getDateRange() {
   return { start, end };
 }
 
+// DA 원본 데이터 (CSV 파싱 전체, 필터링 전)
+let daRawData = [];
+
+function getFilteredDA() {
+  if (daRawData.length === 0) return daData;
+
+  const { start, end } = getDateRange();
+  const startStr = start.toISOString().split("T")[0].replace(/-/g, "");
+  const endStr = end.toISOString().split("T")[0].replace(/-/g, "");
+
+  return daRawData.map((campaign) => {
+    const filtered = (campaign.daily || []).filter((d) => {
+      const dateStr = d.date.replace(/-/g, "");
+      return dateStr >= startStr && dateStr <= endStr;
+    });
+
+    return {
+      ...campaign,
+      cost: filtered.reduce((s, d) => s + d.cost, 0),
+      impressions: filtered.reduce((s, d) => s + d.impressions, 0),
+      clicks: filtered.reduce((s, d) => s + d.clicks, 0),
+      purchaseCount: filtered.reduce((s, d) => s + d.purchaseCount, 0),
+      purchaseAmount: filtered.reduce((s, d) => s + d.purchaseAmount, 0),
+      cartCount: filtered.reduce((s, d) => s + d.cartCount, 0),
+      daily: filtered,
+    };
+  });
+}
+
 function getData() {
-  return currentChannel === "SA" ? saData : daData;
+  if (currentChannel === "SA") return saData;
+  return daRawData.length > 0 ? getFilteredDA() : daData;
 }
 
 // === KPI 렌더 ===
@@ -210,6 +240,7 @@ document.querySelectorAll(".channel-tab").forEach((tab) => {
 document.getElementById("periodSelect").addEventListener("change", (e) => {
   currentPeriod = e.target.value;
   document.getElementById("customDates").classList.toggle("hidden", currentPeriod !== "custom");
+  if (currentPeriod !== "custom") render();
 });
 
 document.getElementById("applyDate").addEventListener("click", render);
@@ -228,6 +259,10 @@ function setStatus(msg, type = "") {
 document.getElementById("btnRefresh").addEventListener("click", async () => {
   if (currentChannel === "SA") {
     await refreshSA();
+  } else {
+    // DA: 기간 필터 적용해서 다시 렌더
+    render();
+    setStatus("DA 기간 필터 적용 완료", "success");
   }
 });
 
@@ -269,6 +304,7 @@ document.getElementById("daFileInput").addEventListener("change", (e) => {
     try {
       const parsed = parseNaverDaCsv(evt.target.result);
       if (parsed.length > 0) {
+        daRawData = parsed;
         daData = parsed;
         render();
         setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
