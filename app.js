@@ -188,37 +188,5 @@ document.getElementById("btnRefreshSA").addEventListener("click", async () => {
   btn.disabled = false;
 });
 
-document.getElementById("btnFetchDA").addEventListener("click", async () => {
-  const btn = document.getElementById("btnFetchDA");
-  btn.disabled = true;
-  setStatus("DA 보고서 다운로드 중... 브라우저가 열릴 수 있어요");
-
-  const { start, end } = getDateRange();
-  const s = start.toISOString().split("T")[0];
-  const e = end.toISOString().split("T")[0];
-
-  try {
-    const res = await fetch(`${API}/api/da/fetch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ start: s, end: e }),
-    });
-    const result = await res.json();
-
-    if (res.status === 401) {
-      setStatus("네이버 로그인 필요 — '로그인' 버튼을 먼저 눌러주세요", "error");
-    } else if (result.success && result.data) {
-      daData = result.data;
-      render();
-      setStatus(`DA 갱신 완료 — ${result.data.length}개 캠페인`, "success");
-    } else {
-      setStatus(result.message || "DA 다운로드 실패 — 스크린샷 확인", "error");
-    }
-  } catch (e) {
-    setStatus("서버 연결 실패 — python server.py 실행 필요", "error");
-  }
-  btn.disabled = false;
-});
-
 // === 초기 렌더 ===
 render();
