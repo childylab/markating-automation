@@ -1,11 +1,11 @@
 // === 데이터 ===
 let saData = [
-  { name: "오디너리홀리데이_PC", type: "WEB_SITE", impressions: 304, clicks: 8, cost: 1806, conversions: 0, convValue: 0 },
-  { name: "오디너리홀리데이_MO", type: "WEB_SITE", impressions: 7225, clicks: 915, cost: 192598, conversions: 68, convValue: 535350 },
-  { name: "ODP스마트스토어_쇼핑검색", type: "SHOPPING", impressions: 432378, clicks: 2143, cost: 590850, conversions: 866, convValue: 46922010 },
-  { name: "ODP스마트스토어_쇼핑검색_일반키워드", type: "SHOPPING", impressions: 267906, clicks: 2376, cost: 722152, conversions: 1178, convValue: 60195600 },
-  { name: "차일디_브랜드검색", type: "BRAND_SEARCH", impressions: 4054, clicks: 1309, cost: 0, conversions: 383, convValue: 3317300 },
-  { name: "유니버셜오버롤_MO_브랜드검색", type: "BRAND_SEARCH", impressions: 108, clicks: 47, cost: 0, conversions: 0, convValue: 0 },
+  { name: "오디너리홀리데이_PC", type: "WEB_SITE", impressions: 304, clicks: 8, cost: 1806, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0 },
+  { name: "오디너리홀리데이_MO", type: "WEB_SITE", impressions: 7225, clicks: 915, cost: 192598, conversions: 68, convValue: 535350, purchaseCount: 5, purchaseAmount: 296850 },
+  { name: "ODP스마트스토어_쇼핑검색", type: "SHOPPING", impressions: 432378, clicks: 2143, cost: 590850, conversions: 866, convValue: 46922010, purchaseCount: 39, purchaseAmount: 1281770 },
+  { name: "ODP스마트스토어_쇼핑검색_일반키워드", type: "SHOPPING", impressions: 267906, clicks: 2376, cost: 722152, conversions: 1178, convValue: 60195600, purchaseCount: 68, purchaseAmount: 2653280 },
+  { name: "차일디_브랜드검색", type: "BRAND_SEARCH", impressions: 4054, clicks: 1309, cost: 0, conversions: 383, convValue: 3317300, purchaseCount: 0, purchaseAmount: 0 },
+  { name: "유니버셜오버롤_MO_브랜드검색", type: "BRAND_SEARCH", impressions: 108, clicks: 47, cost: 0, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0 },
 ];
 
 let daData = [
@@ -171,6 +171,7 @@ document.getElementById("btnRefreshSA").addEventListener("click", async () => {
     saData = data.map((c) => ({
       name: c.name, type: c.type, impressions: c.impressions,
       clicks: c.clicks, cost: c.cost, conversions: c.conversions, convValue: c.convValue,
+      purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
     }));
     render();
     setStatus(`SA 갱신 완료 — ${data.length}개 캠페인`, "success");
