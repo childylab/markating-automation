@@ -6,59 +6,103 @@
         "httpMethod": "GET",
         "path": "naver-sa-campaigns",
         "responseMode": "responseNode",
-        "options": {
-          "allowedOrigins": "*"
-        }
+        "options": {}
       },
       "id": "webhook-1",
-      "name": "Webhook - 캠페인 조회",
+      "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [200, 300]
     },
     {
       "parameters": {
-        "jsCode": "// 네이버 검색광고 API HMAC-SHA256 서명 생성\nconst crypto = require('crypto');\n\n// API 키 직접 설정\nconst API_KEY = '0100000000ece291c0069d44003bf543bd1fbd97f044c45238dba9cb78a1fb35043e93849c';\nconst SECRET_KEY = 'AQAAAADs4pHABp1EADv1Q70fvZfwvJldLtDvgcQCXNQGBPZfWA==';\nconst CUSTOMER_ID = '3303451';\n\n// 쿼리 파라미터에서 기간 가져오기\nconst query = $input.first().json.query || {};\nconst startDate = query.start || new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];\nconst endDate = query.end || new Date().toISOString().split('T')[0];\n\n// 서명 생성\nconst timestamp = Date.now().toString();\nconst method = 'GET';\nconst uri = '/ncc/campaigns';\nconst message = `${timestamp}.${method}.${uri}`;\nconst signature = crypto.createHmac('sha256', SECRET_KEY).update(message).digest('base64');\n\nreturn [{\n  json: {\n    timestamp,\n    signature,\n    apiKey: API_KEY,\n    customerId: CUSTOMER_ID,\n    startDate,\n    endDate,\n    uri\n  }\n}];"
+        "jsCode": "// 타임스탬프 + 서명 메시지 준비\nconst query = $input.first().json.query || {};\nconst startDate = query.start || new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];\nconst endDate = query.end || new Date().toISOString().split('T')[0];\nconst timestamp = Date.now().toString();\nconst uri = '/ncc/campaigns';\nconst signMessage = timestamp + '.' + 'GET' + '.' + uri;\n\nreturn [{ json: { timestamp, signMessage, startDate, endDate, uri } }];"
       },
-      "id": "code-sign-1",
-      "name": "서명 생성",
+      "id": "code-prep-1",
+      "name": "서명 메시지 준비",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 300]
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "action": "sign",
+        "type": "SHA256",
+        "value": "={{ $json.signMessage }}",
+        "secret": "AQAAAADs4pHABp1EADv1Q70fvZfwvJldLtDvgcQCXNQGBPZfWA==",
+        "encoding": "base64"
+      },
+      "id": "crypto-1",
+      "name": "HMAC 서명 (캠페인)",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 서명 결과와 이전 데이터 합치기\nconst prev = $('서명 메시지 준비').first().json;\nconst signature = $input.first().json.data;\nreturn [{ json: { ...prev, signature } }];"
+      },
+      "id": "code-merge-1",
+      "name": "서명 합치기",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 300]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.searchad.naver.com{{ $json.uri }}",
+        "url": "https://api.searchad.naver.com/ncc/campaigns",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             { "name": "Content-Type", "value": "application/json; charset=UTF-8" },
             { "name": "X-Timestamp", "value": "={{ $json.timestamp }}" },
-            { "name": "X-API-KEY", "value": "={{ $json.apiKey }}" },
-            { "name": "X-Customer", "value": "={{ $json.customerId }}" },
+            { "name": "X-API-KEY", "value": "0100000000ece291c0069d44003bf543bd1fbd97f044c45238dba9cb78a1fb35043e93849c" },
+            { "name": "X-Customer", "value": "3303451" },
             { "name": "X-Signature", "value": "={{ $json.signature }}" }
           ]
         },
-        "options": {
-          "response": { "response": { "fullResponse": true } }
-        }
+        "options": {}
       },
       "id": "http-campaigns",
-      "name": "네이버 API - 캠페인 목록",
+      "name": "네이버 API - 캠페인",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [640, 300]
+      "position": [1000, 300]
     },
     {
       "parameters": {
-        "jsCode": "// 캠페인 목록에서 성과 데이터 조회를 위한 서명 생성\nconst crypto = require('crypto');\n\n// API 키 직접 설정\nconst API_KEY = '0100000000ece291c0069d44003bf543bd1fbd97f044c45238dba9cb78a1fb35043e93849c';\nconst SECRET_KEY = 'AQAAAADs4pHABp1EADv1Q70fvZfwvJldLtDvgcQCXNQGBPZfWA==';\nconst CUSTOMER_ID = '3303451';\n\n// 이전 노드에서 캠페인 목록 가져오기\nconst campaigns = $input.first().json.body || $input.first().json;\nconst campaignList = Array.isArray(campaigns) ? campaigns : [];\n\n// 이전 서명 노드에서 기간 정보 가져오기\nconst prevData = $('서명 생성').first().json;\nconst startDate = prevData.startDate;\nconst endDate = prevData.endDate;\n\nconst campaignIds = campaignList.map(c => c.nccCampaignId);\nconst campaignMap = {};\ncampaignList.forEach(c => { campaignMap[c.nccCampaignId] = c; });\n\n// stats 호출용 서명\nconst timestamp = Date.now().toString();\nconst method = 'GET';\nconst uri = '/stats';\nconst message = `${timestamp}.${method}.${uri}`;\nconst signature = crypto.createHmac('sha256', SECRET_KEY).update(message).digest('base64');\n\nreturn [{\n  json: {\n    timestamp,\n    signature,\n    apiKey: API_KEY,\n    customerId: CUSTOMER_ID,\n    campaignIds,\n    campaignMap,\n    startDate,\n    endDate\n  }\n}];"
+        "jsCode": "// 캠페인 목록 저장 + stats 서명 메시지 준비\nconst campaigns = $input.first().json;\nconst campaignList = Array.isArray(campaigns) ? campaigns : (campaigns.body || []);\n\nconst prevData = $('서명 메시지 준비').first().json;\nconst startDate = prevData.startDate;\nconst endDate = prevData.endDate;\n\nconst campaignIds = campaignList.map(c => c.nccCampaignId);\nconst campaignMap = {};\ncampaignList.forEach(c => { campaignMap[c.nccCampaignId] = c; });\n\nconst timestamp = Date.now().toString();\nconst uri = '/stats';\nconst signMessage = timestamp + '.' + 'GET' + '.' + uri;\n\nreturn [{ json: { timestamp, signMessage, campaignIds, campaignMap, startDate, endDate } }];"
       },
-      "id": "code-sign-2",
-      "name": "Stats 서명 생성",
+      "id": "code-prep-2",
+      "name": "Stats 메시지 준비",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [860, 300]
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "action": "sign",
+        "type": "SHA256",
+        "value": "={{ $json.signMessage }}",
+        "secret": "AQAAAADs4pHABp1EADv1Q70fvZfwvJldLtDvgcQCXNQGBPZfWA==",
+        "encoding": "base64"
+      },
+      "id": "crypto-2",
+      "name": "HMAC 서명 (Stats)",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [1400, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Stats 메시지 준비').first().json;\nconst signature = $input.first().json.data;\nreturn [{ json: { ...prev, signature } }];"
+      },
+      "id": "code-merge-2",
+      "name": "Stats 서명 합치기",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 300]
     },
     {
       "parameters": {
@@ -69,43 +113,41 @@
           "parameters": [
             { "name": "Content-Type", "value": "application/json; charset=UTF-8" },
             { "name": "X-Timestamp", "value": "={{ $json.timestamp }}" },
-            { "name": "X-API-KEY", "value": "={{ $json.apiKey }}" },
-            { "name": "X-Customer", "value": "={{ $json.customerId }}" },
+            { "name": "X-API-KEY", "value": "0100000000ece291c0069d44003bf543bd1fbd97f044c45238dba9cb78a1fb35043e93849c" },
+            { "name": "X-Customer", "value": "3303451" },
             { "name": "X-Signature", "value": "={{ $json.signature }}" }
           ]
         },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "ids", "value": "={{ $json.campaignIds.join(',') }}" },
-            { "name": "fields", "value": "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\",\"ccnt\",\"convAmt\",\"crto\"]" },
-            { "name": "timeRange", "value": "={\"since\":\"{{ $json.startDate }}\",\"until\":\"{{ $json.endDate }}\"}" }
+            { "name": "ids", "value": "={{ $json.campaignIds }}" },
+            { "name": "fields", "value": "[\"impCnt\",\"clkCnt\",\"salesAmt\",\"ctr\",\"cpc\",\"ccnt\",\"convAmt\"]" },
+            { "name": "timeRange", "value": "={{ JSON.stringify({since: $json.startDate, until: $json.endDate}) }}" }
           ]
         },
-        "options": {
-          "response": { "response": { "fullResponse": true } }
-        }
+        "options": {}
       },
       "id": "http-stats",
-      "name": "네이버 API - 성과 데이터",
+      "name": "네이버 API - Stats",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 300]
+      "position": [1800, 300]
     },
     {
       "parameters": {
-        "jsCode": "// 캠페인 목록 + 성과 데이터 조합하여 최종 응답 생성\nconst prevData = $('Stats 서명 생성').first().json;\nconst campaignMap = prevData.campaignMap;\n\nconst statsResponse = $input.first().json.body || $input.first().json;\nconst statsData = statsResponse.data || (Array.isArray(statsResponse) ? statsResponse : []);\n\nconst output = statsData.map(s => {\n  const camp = campaignMap[s.id] || {};\n  return {\n    id: s.id,\n    name: camp.name || '',\n    type: camp.campaignTp || '',\n    account: 'SA',\n    status: camp.status || '',\n    impressions: s.impCnt || 0,\n    clicks: s.clkCnt || 0,\n    cost: s.salesAmt || 0,\n    ctr: s.ctr || 0,\n    cpc: s.cpc || 0,\n    conversions: s.ccnt || 0,\n    convValue: s.convAmt || 0,\n    purchaseCount: 0,\n    purchaseAmount: 0,\n    cartCount: 0\n  };\n});\n\nreturn [{ json: { campaigns: output } }];"
+        "jsCode": "// 최종 응답 조합\nconst prevData = $('Stats 메시지 준비').first().json;\nconst campaignMap = prevData.campaignMap;\n\nconst statsRaw = $input.first().json;\nconst statsData = statsRaw.data || (Array.isArray(statsRaw) ? statsRaw : []);\n\nconst output = statsData.map(s => {\n  const camp = campaignMap[s.id] || {};\n  return {\n    id: s.id,\n    name: camp.name || '',\n    type: camp.campaignTp || '',\n    account: 'SA',\n    status: camp.status || '',\n    impressions: s.impCnt || 0,\n    clicks: s.clkCnt || 0,\n    cost: s.salesAmt || 0,\n    ctr: s.ctr || 0,\n    cpc: s.cpc || 0,\n    conversions: s.ccnt || 0,\n    convValue: s.convAmt || 0,\n    purchaseCount: 0,\n    purchaseAmount: 0,\n    cartCount: 0\n  };\n});\n\nreturn [{ json: output }];"
       },
-      "id": "code-combine",
+      "id": "code-final",
       "name": "데이터 조합",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1300, 300]
+      "position": [2000, 300]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json.campaigns) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -118,42 +160,20 @@
       "name": "응답 반환",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1520, 300]
+      "position": [2200, 300]
     }
   ],
   "connections": {
-    "Webhook - 캠페인 조회": {
-      "main": [
-        [{ "node": "서명 생성", "type": "main", "index": 0 }]
-      ]
-    },
-    "서명 생성": {
-      "main": [
-        [{ "node": "네이버 API - 캠페인 목록", "type": "main", "index": 0 }]
-      ]
-    },
-    "네이버 API - 캠페인 목록": {
-      "main": [
-        [{ "node": "Stats 서명 생성", "type": "main", "index": 0 }]
-      ]
-    },
-    "Stats 서명 생성": {
-      "main": [
-        [{ "node": "네이버 API - 성과 데이터", "type": "main", "index": 0 }]
-      ]
-    },
-    "네이버 API - 성과 데이터": {
-      "main": [
-        [{ "node": "데이터 조합", "type": "main", "index": 0 }]
-      ]
-    },
-    "데이터 조합": {
-      "main": [
-        [{ "node": "응답 반환", "type": "main", "index": 0 }]
-      ]
-    }
+    "Webhook": { "main": [[{ "node": "서명 메시지 준비", "type": "main", "index": 0 }]] },
+    "서명 메시지 준비": { "main": [[{ "node": "HMAC 서명 (캠페인)", "type": "main", "index": 0 }]] },
+    "HMAC 서명 (캠페인)": { "main": [[{ "node": "서명 합치기", "type": "main", "index": 0 }]] },
+    "서명 합치기": { "main": [[{ "node": "네이버 API - 캠페인", "type": "main", "index": 0 }]] },
+    "네이버 API - 캠페인": { "main": [[{ "node": "Stats 메시지 준비", "type": "main", "index": 0 }]] },
+    "Stats 메시지 준비": { "main": [[{ "node": "HMAC 서명 (Stats)", "type": "main", "index": 0 }]] },
+    "HMAC 서명 (Stats)": { "main": [[{ "node": "Stats 서명 합치기", "type": "main", "index": 0 }]] },
+    "Stats 서명 합치기": { "main": [[{ "node": "네이버 API - Stats", "type": "main", "index": 0 }]] },
+    "네이버 API - Stats": { "main": [[{ "node": "데이터 조합", "type": "main", "index": 0 }]] },
+    "데이터 조합": { "main": [[{ "node": "응답 반환", "type": "main", "index": 0 }]] }
   },
-  "settings": {
-    "executionOrder": "v1"
-  }
+  "settings": { "executionOrder": "v1" }
 }
