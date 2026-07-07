@@ -192,43 +192,46 @@ def get_sa_campaigns():
 
 @app.route("/api/da/fetch", methods=["POST"])
 def fetch_da_report():
-    """DA 보고서 Playwright로 다운로드 — 크롬 프로필 복사본 사용 (봇감지 우회)"""
+    """DA 보고서 Playwright로 다운로드 — 전용 프로필에 세션 유지"""
     from playwright.sync_api import sync_playwright
 
     start_date = request.json.get("start", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
     end_date = request.json.get("end", datetime.now().strftime("%Y-%m-%d"))
 
-    # 복사해둔 크롬 프로필 (크롬이 열려있어도 충돌 안 남)
-    profile_path = os.path.join(BASE_DIR, ".chrome-profile")
+    # Playwright 전용 프로필 (첫 로그인 후 세션 유지됨)
+    profile_path = os.path.join(BASE_DIR, ".pw-profile")
+    os.makedirs(profile_path, exist_ok=True)
 
     try:
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=profile_path,
-                channel="chrome",
                 headless=False,
+                args=["--disable-blink-features=AutomationControlled"],
             )
 
             page = context.pages[0] if context.pages else context.new_page()
 
             # ads.naver.com 접속
-            page.goto("https://ads.naver.com/manage/ad-accounts/1667290/dashboard")
+            page.goto("https://ads.naver.com/manage/ad-accounts/1667290/dashboard", wait_until="domcontentloaded")
             time.sleep(5)
 
-            # 로그인 필요하면 3분 대기
+            # 로그인 필요하면 3분 대기 (아무것도 안 건드림)
             if "nid.naver.com" in page.url or "nidlogin" in page.url:
-                print("[DA] 로그인 필요 — 브라우저에서 직접 로그인해주세요 (최대 3분)")
+                print("[DA] 로그인 필요 — 열린 브라우저에서 직접 로그인해주세요 (최대 3분)")
                 for i in range(180):
                     time.sleep(1)
-                    if "ads.naver.com" in page.url and "nid.naver.com" not in page.url:
+                    current = page.url
+                    if "ads.naver.com" in current and "nid.naver.com" not in current:
+                        print(f"[DA] 로그인 성공! ({i+1}초)")
                         break
                 time.sleep(3)
                 if "nid.naver.com" in page.url:
                     context.close()
-                    return jsonify({"error": "로그인 시간 초과", "needLogin": True}), 401
+                    return jsonify({"error": "로그인 시간 초과 (3분)", "needLogin": True}), 401
 
             # 보고서 페이지 이동
-            page.goto("https://ads.naver.com/manage/ad-accounts/1667290/reports")
+            page.goto("https://ads.naver.com/manage/ad-accounts/1667290/reports", wait_until="domcontentloaded")
             time.sleep(3)
 
             # 스크린샷

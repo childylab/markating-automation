@@ -2,6 +2,7 @@
 .env
 .naver_cookies.json
 .chrome-profile/
+.pw-profile/
 __pycache__/
 *.pyc
 .DS_Store

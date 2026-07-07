@@ -220,24 +220,5 @@ document.getElementById("btnFetchDA").addEventListener("click", async () => {
   btn.disabled = false;
 });
 
-document.getElementById("btnLoginDA").addEventListener("click", async () => {
-  const btn = document.getElementById("btnLoginDA");
-  btn.disabled = true;
-  setStatus("브라우저가 열립니다. 네이버 로그인을 완료해주세요 (3분)...");
-
-  try {
-    const res = await fetch(`${API}/api/da/login`, { method: "POST" });
-    const result = await res.json();
-    if (result.success) {
-      setStatus("로그인 완료! DA 데이터를 불러올 수 있어요", "success");
-    } else {
-      setStatus(result.message || "로그인 실패", "error");
-    }
-  } catch (e) {
-    setStatus("서버 연결 실패 — python server.py 실행 필요", "error");
-  }
-  btn.disabled = false;
-});
-
 // === 초기 렌더 ===
 render();
