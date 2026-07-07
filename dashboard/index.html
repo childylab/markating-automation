@@ -11,14 +11,37 @@
   <nav class="navigation">
     <div class="nav-inner">
       <span class="nav-title">마케팅 퍼포먼스</span>
-      <span class="nav-period" id="periodLabel">최근 1달</span>
+      <span class="nav-badge">차일디</span>
     </div>
   </nav>
 
-  <!-- Top Summary -->
-  <section class="top-section">
-    <h1 class="title-large">캠페인 성과 리포트</h1>
-    <p class="body text-secondary">네이버 SA 계정 기준 최근 30일 성과예요</p>
+  <!-- Period Filter -->
+  <section class="period-section">
+    <div class="period-presets">
+      <button class="period-btn active" data-period="7">최근 7일</button>
+      <button class="period-btn" data-period="7ex">최근 7일(오늘제외)</button>
+      <button class="period-btn" data-period="30">최근 30일</button>
+      <button class="period-btn" data-period="30ex">최근 30일(오늘제외)</button>
+      <button class="period-btn" data-period="custom">직접선택</button>
+    </div>
+    <div class="period-custom hidden" id="periodCustom">
+      <div class="date-inputs">
+        <input type="date" id="startDate" class="date-input">
+        <span class="date-separator">~</span>
+        <input type="date" id="endDate" class="date-input">
+      </div>
+      <button class="apply-btn" id="applyCustomDate">적용하기</button>
+    </div>
+    <div class="period-label" id="periodLabel">2026.06.30 ~ 2026.07.07</div>
+  </section>
+
+  <!-- Account Tab -->
+  <section class="account-section">
+    <div class="tab-group">
+      <button class="tab active" data-account="all">전체</button>
+      <button class="tab" data-account="SA">SA (검색광고)</button>
+      <button class="tab" data-account="DA">DA (디스플레이)</button>
+    </div>
   </section>
 
   <!-- KPI Cards -->
@@ -40,16 +63,25 @@
         <span class="kpi-label">ROAS</span>
         <span class="kpi-value" id="totalRoas">-</span>
       </div>
+      <div class="kpi-card">
+        <span class="kpi-label">노출수</span>
+        <span class="kpi-value" id="totalImpressions">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">평균 CPC</span>
+        <span class="kpi-value" id="avgCpc">-</span>
+      </div>
     </div>
   </section>
 
-  <!-- Tab Filter -->
-  <section class="tab-section">
+  <!-- Campaign Type Filter -->
+  <section class="type-section">
     <div class="tab-group">
-      <button class="tab active" data-filter="all">전체</button>
-      <button class="tab" data-filter="SHOPPING">쇼핑검색</button>
-      <button class="tab" data-filter="BRAND_SEARCH">브랜드검색</button>
-      <button class="tab" data-filter="WEB_SITE">파워링크</button>
+      <button class="type-tab active" data-type="all">전체</button>
+      <button class="type-tab" data-type="SHOPPING">쇼핑검색</button>
+      <button class="type-tab" data-type="BRAND_SEARCH">브랜드검색</button>
+      <button class="type-tab" data-type="WEB_SITE">파워링크</button>
+      <button class="type-tab" data-type="DISPLAY">애드부스트</button>
     </div>
   </section>
 
@@ -57,26 +89,25 @@
   <section class="list-section">
     <div class="list-header">
       <span class="list-header-title">캠페인별 성과</span>
-      <span class="list-header-action" id="sortToggle">비용순</span>
+      <span class="list-header-action" id="sortToggle">비용순 ↓</span>
     </div>
     <div class="list-body" id="campaignList">
-      <!-- 동적 렌더링 -->
     </div>
   </section>
 
-  <!-- 계정 정보 -->
+  <!-- Account Info -->
   <section class="info-section">
     <div class="info-card">
-      <span class="caption">계정</span>
-      <span class="body">차일디 SA (1667291)</span>
+      <span class="caption">SA 계정</span>
+      <span class="body">차일디 (1667291) · 남도마켓 대행</span>
+    </div>
+    <div class="info-card">
+      <span class="caption">DA 계정</span>
+      <span class="body">차일디 (1667290) · 자체 운영</span>
     </div>
     <div class="info-card">
       <span class="caption">매체</span>
-      <span class="body">네이버 검색광고</span>
-    </div>
-    <div class="info-card">
-      <span class="caption">데이터 기준</span>
-      <span class="body" id="dataDate">-</span>
+      <span class="body">네이버 검색광고 + 성과형 디스플레이</span>
     </div>
   </section>
 
