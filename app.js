@@ -237,12 +237,25 @@ function render() {
 
 // === 이벤트 ===
 
-// 채널 탭
-document.querySelectorAll(".channel-tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".channel-tab").forEach((t) => t.classList.remove("active"));
+// 채널 탭 (sidebar nav items)
+document.querySelectorAll(".nav-item[data-channel]").forEach((tab) => {
+  tab.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.querySelectorAll(".nav-item[data-channel]").forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
     currentChannel = tab.dataset.channel;
+
+    // 페이지 타이틀 업데이트
+    const titleEl = document.getElementById("pageTitle");
+    const subEl = document.getElementById("pageSub");
+    if (currentChannel === "SA") {
+      titleEl.textContent = "SA 검색광고";
+      subEl.textContent = "계정 1667291 · 남도마켓 대행";
+    } else {
+      titleEl.textContent = "DA 디스플레이";
+      subEl.textContent = "CSV 기반 성과 분석";
+    }
+
     render();
   });
 });

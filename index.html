@@ -4,16 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>마케팅 퍼포먼스 대시보드</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Header -->
-  <header class="header">
-    <div class="header-left">
-      <h1 class="header-title">마케팅 퍼포먼스</h1>
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <span class="logo-icon">📊</span>
+        <div class="logo-text">
+          <span class="logo-name">Childy Lab</span>
+          <span class="logo-sub">Marketing Analytics</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-channel="SA">
+          <span class="nav-icon">🔍</span>
+          <span>SA 검색광고</span>
+        </a>
+        <a href="#" class="nav-item" data-channel="DA">
+          <span class="nav-icon">📱</span>
+          <span>DA 디스플레이</span>
+        </a>
+        <a href="#" class="nav-item disabled">
+          <span class="nav-icon">📋</span>
+          <span>리포트</span>
+          <span class="nav-badge">soon</span>
+        </a>
+        <a href="#" class="nav-item disabled">
+          <span class="nav-icon">⚙️</span>
+          <span>설정</span>
+        </a>
+      </nav>
     </div>
-    <div class="header-right">
-      <div class="period-control">
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <span class="user-avatar">C</span>
+        <span class="user-name">Childy</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 class="page-title" id="pageTitle">SA 검색광고</h2>
+        <span class="page-sub" id="pageSub">계정 1667291 · 남도마켓 대행</span>
+      </div>
+      <div class="topbar-right">
         <select id="periodSelect" class="select-input">
           <option value="7">최근 7일</option>
           <option value="7ex">최근 7일 (오늘제외)</option>
@@ -25,96 +65,61 @@
           <input type="date" id="startDate" class="date-input">
           <span class="date-sep">~</span>
           <input type="date" id="endDate" class="date-input">
-          <button class="btn-sm" id="applyDate">적용</button>
+          <button class="btn-secondary btn-sm" id="applyDate">적용</button>
         </div>
-        <button class="btn-refresh" id="btnRefresh" title="데이터 새로고침">
+        <button class="btn-secondary" id="btnRefresh">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          새로고침
         </button>
-        <label class="btn-upload hidden" id="btnUploadWrap" title="DA CSV 업로드">
+        <label class="btn-secondary btn-upload hidden" id="btnUploadWrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          CSV
+          CSV 업로드
           <input type="file" id="daFileInput" accept=".csv" style="display:none">
         </label>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Channel Tabs -->
-  <section class="channel-tabs">
-    <button class="channel-tab active" data-channel="SA">
-      <span class="channel-tab-label">SA 검색광고</span>
-      <span class="channel-tab-sub">1667291 · 남도마켓 대행</span>
-    </button>
-    <button class="channel-tab" data-channel="DA">
-      <span class="channel-tab-label">DA 디스플레이</span>
-      <span class="channel-tab-sub">1667290 · 자체운영 · AdVoost</span>
-    </button>
-  </section>
+    <!-- Status -->
+    <div class="status-bar" id="statusBar"></div>
 
-  <!-- Status Bar -->
-  <div class="status-bar" id="statusBar"></div>
+    <!-- KPI -->
+    <section class="kpi-section">
+      <div class="kpi-grid">
+        <div class="kpi-card"><span class="kpi-label">광고비</span><span class="kpi-value" id="kpiCost">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">노출</span><span class="kpi-value" id="kpiImpressions">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">클릭</span><span class="kpi-value" id="kpiClicks">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">CTR</span><span class="kpi-value" id="kpiCtr">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">구매전환</span><span class="kpi-value" id="kpiPurchase">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">구매매출</span><span class="kpi-value" id="kpiRevenue">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">구매 ROAS</span><span class="kpi-value" id="kpiRoas">-</span></div>
+        <div class="kpi-card"><span class="kpi-label">CPC</span><span class="kpi-value" id="kpiCpc">-</span></div>
+      </div>
+    </section>
 
-  <!-- KPI Cards -->
-  <section class="kpi-section">
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <span class="kpi-label">광고비</span>
-        <span class="kpi-value" id="kpiCost">-</span>
+    <!-- Table -->
+    <section class="table-section">
+      <div class="table-wrap">
+        <table class="data-table" id="mainTable">
+          <thead>
+            <tr>
+              <th>캠페인</th>
+              <th class="num">광고비</th>
+              <th class="num">노출</th>
+              <th class="num">클릭</th>
+              <th class="num">CTR</th>
+              <th class="num">장바구니</th>
+              <th class="num">구매</th>
+              <th class="num">구매액</th>
+              <th class="num">구매ROAS</th>
+              <th class="num">노출→구매</th>
+              <th class="num">클릭→구매</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div class="kpi-card">
-        <span class="kpi-label">노출</span>
-        <span class="kpi-value" id="kpiImpressions">-</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">클릭</span>
-        <span class="kpi-value" id="kpiClicks">-</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">CTR</span>
-        <span class="kpi-value" id="kpiCtr">-</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">구매전환</span>
-        <span class="kpi-value" id="kpiPurchase">-</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">구매매출</span>
-        <span class="kpi-value" id="kpiRevenue">-</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">구매 ROAS</span>
-        <span class="kpi-value" id="kpiRoas">-</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">CPC</span>
-        <span class="kpi-value" id="kpiCpc">-</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Campaign Table -->
-  <section class="table-section">
-    <div class="table-wrap">
-      <table class="data-table" id="mainTable">
-        <thead>
-          <tr>
-            <th>캠페인</th>
-            <th class="num">광고비</th>
-            <th class="num">노출</th>
-            <th class="num">클릭</th>
-            <th class="num">CTR</th>
-            <th class="num">장바구니</th>
-            <th class="num">구매</th>
-            <th class="num">구매액</th>
-            <th class="num">구매ROAS</th>
-            <th class="num">노출→구매</th>
-            <th class="num">클릭→구매</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <script src="app.js"></script>
 </body>
