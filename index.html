@@ -10,8 +10,7 @@
   <!-- Header -->
   <header class="header">
     <div class="header-left">
-      <h1 class="header-title">마케팅 퍼포먼스 대시보드</h1>
-      <span class="header-sub">차일디 · 네이버 광고</span>
+      <h1 class="header-title">마케팅 퍼포먼스</h1>
     </div>
     <div class="header-right">
       <div class="period-control">
@@ -29,105 +28,92 @@
           <button class="btn-sm" id="applyDate">적용</button>
         </div>
       </div>
-      <div class="header-actions">
-        <button class="btn-action" id="btnRefreshSA" title="SA 데이터 새로고침">↻ SA</button>
-        <label class="btn-action da" title="DA CSV 업로드">
-          📂 DA 업로드
-          <input type="file" id="daFileInput" accept=".csv" style="display:none">
-        </label>
-      </div>
     </div>
   </header>
+
+  <!-- Channel Tabs -->
+  <section class="channel-tabs">
+    <button class="channel-tab active" data-channel="SA">
+      <span class="channel-tab-label">SA 검색광고</span>
+      <span class="channel-tab-sub">1667291 · 남도마켓 대행</span>
+    </button>
+    <button class="channel-tab" data-channel="DA">
+      <span class="channel-tab-label">DA 디스플레이</span>
+      <span class="channel-tab-sub">1667290 · 자체운영 · AdVoost</span>
+    </button>
+  </section>
 
   <!-- Status Bar -->
   <div class="status-bar" id="statusBar"></div>
 
-  <!-- KPI Row -->
-  <section class="kpi-row">
-    <div class="kpi-card sa">
-      <div class="kpi-header"><span class="kpi-badge">SA</span> CPC</div>
-      <div class="kpi-value" id="saCpc">-</div>
-    </div>
-    <div class="kpi-card sa">
-      <div class="kpi-header"><span class="kpi-badge">SA</span> 구매ROAS</div>
-      <div class="kpi-value" id="saRoas">-</div>
-    </div>
-    <div class="kpi-card da">
-      <div class="kpi-header"><span class="kpi-badge da-badge">DA</span> CPC</div>
-      <div class="kpi-value" id="daCpc">-</div>
-    </div>
-    <div class="kpi-card da">
-      <div class="kpi-header"><span class="kpi-badge da-badge">DA</span> 구매ROAS</div>
-      <div class="kpi-value" id="daRoas">-</div>
-    </div>
-    <div class="kpi-card total">
-      <div class="kpi-header"><span class="kpi-badge total-badge">전체</span> 광고비</div>
-      <div class="kpi-value" id="totalCost">-</div>
-    </div>
-    <div class="kpi-card total">
-      <div class="kpi-header"><span class="kpi-badge total-badge">전체</span> 구매전환</div>
-      <div class="kpi-value" id="totalConv">-</div>
+  <!-- KPI Cards -->
+  <section class="kpi-section">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">광고비</span>
+        <span class="kpi-value" id="kpiCost">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">노출</span>
+        <span class="kpi-value" id="kpiImpressions">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">클릭</span>
+        <span class="kpi-value" id="kpiClicks">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">CTR</span>
+        <span class="kpi-value" id="kpiCtr">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">구매전환</span>
+        <span class="kpi-value" id="kpiPurchase">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">구매매출</span>
+        <span class="kpi-value" id="kpiRevenue">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">구매 ROAS</span>
+        <span class="kpi-value" id="kpiRoas">-</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">CPC</span>
+        <span class="kpi-value" id="kpiCpc">-</span>
+      </div>
     </div>
   </section>
 
-  <!-- Main Content: Columns by Account -->
-  <section class="columns">
-    <!-- SA Column -->
-    <div class="column">
-      <div class="column-header">
-        <span class="column-title">SA 검색광고</span>
-        <span class="column-sub">계정 1667291 · 남도마켓 대행</span>
-      </div>
-      <div class="summary-row" id="saSummary"></div>
-      <div class="table-wrap">
-        <table class="data-table" id="saTable">
-          <thead>
-            <tr>
-              <th>캠페인</th>
-              <th class="num">광고비</th>
-              <th class="num">노출</th>
-              <th class="num">클릭</th>
-              <th class="num">CTR</th>
-              <th class="num">장바구니</th>
-              <th class="num">구매</th>
-              <th class="num">구매액</th>
-              <th class="num">구매ROAS</th>
-              <th class="num">노출→구매</th>
-              <th class="num">클릭→구매</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <!-- Actions -->
+  <section class="actions-section">
+    <button class="btn-action" id="btnRefresh">↻ 데이터 새로고침</button>
+    <label class="btn-action da-upload hidden" id="btnUploadWrap">
+      📂 CSV 업로드
+      <input type="file" id="daFileInput" accept=".csv" style="display:none">
+    </label>
+  </section>
 
-    <!-- DA Column -->
-    <div class="column">
-      <div class="column-header">
-        <span class="column-title">DA 성과형 디스플레이</span>
-        <span class="column-sub">계정 1667290 · 자체운영 · AdVoost</span>
-      </div>
-      <div class="summary-row" id="daSummary"></div>
-      <div class="table-wrap">
-        <table class="data-table" id="daTable">
-          <thead>
-            <tr>
-              <th>캠페인</th>
-              <th class="num">광고비</th>
-              <th class="num">노출</th>
-              <th class="num">클릭</th>
-              <th class="num">CTR</th>
-              <th class="num">장바구니</th>
-              <th class="num">구매</th>
-              <th class="num">구매액</th>
-              <th class="num">구매ROAS</th>
-              <th class="num">노출→구매</th>
-              <th class="num">클릭→구매</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+  <!-- Campaign Table -->
+  <section class="table-section">
+    <div class="table-wrap">
+      <table class="data-table" id="mainTable">
+        <thead>
+          <tr>
+            <th>캠페인</th>
+            <th class="num">광고비</th>
+            <th class="num">노출</th>
+            <th class="num">클릭</th>
+            <th class="num">CTR</th>
+            <th class="num">장바구니</th>
+            <th class="num">구매</th>
+            <th class="num">구매액</th>
+            <th class="num">구매ROAS</th>
+            <th class="num">노출→구매</th>
+            <th class="num">클릭→구매</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </section>
 

@@ -1,16 +1,20 @@
 // === 데이터 ===
 let saData = [
-  { name: "오디너리홀리데이_PC", type: "WEB_SITE", impressions: 304, clicks: 8, cost: 1806, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0 },
-  { name: "오디너리홀리데이_MO", type: "WEB_SITE", impressions: 7225, clicks: 915, cost: 192598, conversions: 68, convValue: 535350, purchaseCount: 5, purchaseAmount: 296850, cartCount: 30 },
-  { name: "ODP스마트스토어_쇼핑검색", type: "SHOPPING", impressions: 432378, clicks: 2143, cost: 590850, conversions: 866, convValue: 46922010, purchaseCount: 39, purchaseAmount: 1281770, cartCount: 280 },
-  { name: "ODP스마트스토어_쇼핑검색_일반키워드", type: "SHOPPING", impressions: 267906, clicks: 2376, cost: 722152, conversions: 1178, convValue: 60195600, purchaseCount: 68, purchaseAmount: 2653280, cartCount: 404 },
-  { name: "차일디_브랜드검색", type: "BRAND_SEARCH", impressions: 4054, clicks: 1309, cost: 0, conversions: 383, convValue: 3317300, purchaseCount: 0, purchaseAmount: 0, cartCount: 10 },
-  { name: "유니버셜오버롤_MO_브랜드검색", type: "BRAND_SEARCH", impressions: 108, clicks: 47, cost: 0, conversions: 0, convValue: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0 },
+  { id: "cmp-sa-01", name: "오디너리홀리데이_PC", impressions: 304, clicks: 8, cost: 1806, purchaseCount: 0, purchaseAmount: 0, cartCount: 0, account: "SA" },
+  { id: "cmp-sa-02", name: "오디너리홀리데이_MO", impressions: 7225, clicks: 915, cost: 192598, purchaseCount: 5, purchaseAmount: 296850, cartCount: 30, account: "SA" },
+  { id: "cmp-sa-03", name: "ODP스마트스토어_쇼핑검색", impressions: 432378, clicks: 2143, cost: 590850, purchaseCount: 39, purchaseAmount: 1281770, cartCount: 280, account: "SA" },
+  { id: "cmp-sa-04", name: "ODP스마트스토어_쇼핑검색_일반키워드", impressions: 267906, clicks: 2376, cost: 722152, purchaseCount: 68, purchaseAmount: 2653280, cartCount: 404, account: "SA" },
+  { id: "cmp-sa-05", name: "차일디_브랜드검색", impressions: 4054, clicks: 1309, cost: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 10, account: "SA" },
+  { id: "cmp-sa-06", name: "유니버셜오버롤_MO_브랜드검색", impressions: 108, clicks: 47, cost: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0, account: "SA" },
 ];
 
 let daData = [
-  { name: "ODP_ADVoost_26년_상시운영", type: "DISPLAY", impressions: 0, clicks: 0, cost: 0, conversions: 0, convValue: 0, note: "Playwright 연동 후 자동 업데이트" },
+  { name: "ODP_ADVoost_26년_상시운영", impressions: 0, clicks: 0, cost: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0, account: "DA", daily: [], note: "CSV 업로드로 데이터를 반영해주세요" },
 ];
+
+// === 상태 ===
+let currentChannel = "SA";
+let currentPeriod = "30";
 
 // === 유틸 ===
 function fmt(n) {
@@ -25,19 +29,6 @@ function fmtWon(n) {
   if (n === 0) return "-";
   return "₩" + n.toLocaleString();
 }
-
-function calcRoas(cost, convValue) {
-  if (!cost) return "-";
-  return ((convValue / cost) * 100).toFixed(1) + "%";
-}
-
-function calcCpc(cost, clicks) {
-  if (!clicks) return "-";
-  return "₩" + Math.round(cost / clicks).toLocaleString();
-}
-
-// === 기간 ===
-let currentPeriod = "30";
 
 function getDateRange() {
   const today = new Date();
@@ -56,47 +47,37 @@ function getDateRange() {
   return { start, end };
 }
 
-// === 렌더 ===
+function getData() {
+  return currentChannel === "SA" ? saData : daData;
+}
+
+// === KPI 렌더 ===
 function renderKPI() {
-  const saCost = saData.reduce((s, c) => s + c.cost, 0);
-  const saClicks = saData.reduce((s, c) => s + c.clicks, 0);
-  const saConvValue = saData.reduce((s, c) => s + c.convValue, 0);
-  const saPurchaseAmt = saData.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
-
-  const daCost = daData.reduce((s, c) => s + c.cost, 0);
-  const daClicks = daData.reduce((s, c) => s + c.clicks, 0);
-  const daConvValue = daData.reduce((s, c) => s + c.convValue, 0);
-  const daPurchaseAmt = daData.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
-
-  const totalCost = saCost + daCost;
-  const totalConv = saData.reduce((s, c) => s + (c.purchaseCount || 0), 0) + daData.reduce((s, c) => s + (c.purchaseCount || 0), 0);
-
-  document.getElementById("saCpc").textContent = calcCpc(saCost, saClicks);
-  document.getElementById("saRoas").textContent = saCost && saPurchaseAmt ? ((saPurchaseAmt / saCost) * 100).toFixed(1) + "%" : "-";
-  document.getElementById("daCpc").textContent = calcCpc(daCost, daClicks);
-  document.getElementById("daRoas").textContent = daCost && daPurchaseAmt ? ((daPurchaseAmt / daCost) * 100).toFixed(1) + "%" : "-";
-  document.getElementById("totalCost").textContent = fmtWon(totalCost);
-  document.getElementById("totalConv").textContent = fmt(totalConv) + "건";
-}
-
-function renderSummary(el, data) {
+  const data = getData();
   const cost = data.reduce((s, c) => s + c.cost, 0);
-  const clicks = data.reduce((s, c) => s + c.clicks, 0);
   const imps = data.reduce((s, c) => s + c.impressions, 0);
-  const conv = data.reduce((s, c) => s + c.conversions, 0);
-  const convVal = data.reduce((s, c) => s + c.convValue, 0);
+  const clicks = data.reduce((s, c) => s + c.clicks, 0);
+  const purchase = data.reduce((s, c) => s + (c.purchaseCount || 0), 0);
+  const revenue = data.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
+  const ctr = imps ? ((clicks / imps) * 100).toFixed(2) + "%" : "-";
+  const roas = cost && revenue ? ((revenue / cost) * 100).toFixed(1) + "%" : "-";
+  const cpc = clicks ? "₩" + Math.round(cost / clicks).toLocaleString() : "-";
 
-  el.innerHTML = `
-    <div class="summary-item"><span class="summary-label">광고비</span><span class="summary-value">${fmtWon(cost)}</span></div>
-    <div class="summary-item"><span class="summary-label">노출</span><span class="summary-value">${fmt(imps)}</span></div>
-    <div class="summary-item"><span class="summary-label">클릭</span><span class="summary-value">${fmt(clicks)}</span></div>
-    <div class="summary-item"><span class="summary-label">전환</span><span class="summary-value">${fmt(conv)}</span></div>
-    <div class="summary-item"><span class="summary-label">전환매출</span><span class="summary-value">${fmtWon(convVal)}</span></div>
-  `;
+  document.getElementById("kpiCost").textContent = fmtWon(cost);
+  document.getElementById("kpiImpressions").textContent = fmt(imps);
+  document.getElementById("kpiClicks").textContent = fmt(clicks);
+  document.getElementById("kpiCtr").textContent = ctr;
+  document.getElementById("kpiPurchase").textContent = fmt(purchase) + "건";
+  document.getElementById("kpiRevenue").textContent = fmtWon(revenue);
+  document.getElementById("kpiRoas").textContent = roas;
+  document.getElementById("kpiCpc").textContent = cpc;
 }
 
-function renderTable(tableEl, data) {
-  const tbody = tableEl.querySelector("tbody");
+// === 테이블 렌더 ===
+function renderTable() {
+  const data = getData();
+  const tbody = document.querySelector("#mainTable tbody");
+
   if (!data.length || (data.length === 1 && data[0].cost === 0 && data[0].note)) {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="11">${data[0]?.note || "데이터 없음"}</td></tr>`;
     return;
@@ -111,14 +92,13 @@ function renderTable(tableEl, data) {
     const ctr = c.impressions ? ((c.clicks / c.impressions) * 100).toFixed(2) + "%" : "-";
     const impToPurchase = c.impressions && c.purchaseCount ? ((c.purchaseCount / c.impressions) * 100).toFixed(3) + "%" : "-";
     const clkToPurchase = c.clicks && c.purchaseCount ? ((c.purchaseCount / c.clicks) * 100).toFixed(1) + "%" : "-";
-    const rowId = `daily-${tableEl.id}-${idx}`;
+    const rowId = `daily-${currentChannel}-${idx}`;
     const hasDaily = c.daily && c.daily.length > 0;
-    const account = c.account || "SA";
 
     const row = document.createElement("tr");
     row.className = "campaign-row-clickable";
     row.innerHTML = `
-      <td class="campaign-name">${hasDaily || account === "SA" ? "▶ " : ""}${c.name}</td>
+      <td class="campaign-name">${hasDaily || currentChannel === "SA" ? "▶ " : ""}${c.name}</td>
       <td class="num">${fmtWon(c.cost)}</td>
       <td class="num">${fmt(c.impressions)}</td>
       <td class="num">${fmt(c.clicks)}</td>
@@ -131,10 +111,9 @@ function renderTable(tableEl, data) {
       <td class="num">${clkToPurchase}</td>
     `;
     row.style.cursor = "pointer";
-    row.addEventListener("click", () => toggleDaily(rowId, c, account));
+    row.addEventListener("click", () => toggleDaily(rowId, c));
     tbody.appendChild(row);
 
-    // 일별 데이터 행 (숨겨진 상태)
     const dailyRow = document.createElement("tr");
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
@@ -143,35 +122,29 @@ function renderTable(tableEl, data) {
   });
 }
 
-async function toggleDaily(rowId, campaign, account) {
+async function toggleDaily(rowId, campaign) {
   const row = document.getElementById(rowId);
   if (!row) return;
 
-  // 토글
   if (!row.classList.contains("hidden")) {
     row.classList.add("hidden");
     return;
   }
   row.classList.remove("hidden");
 
-  // 이미 데이터가 있으면 스킵
   if (row.dataset.loaded === "true") return;
 
   let dailyData = [];
 
-  if (account === "DA" && campaign.daily && campaign.daily.length > 0) {
-    // DA: 이미 CSV에서 파싱된 일별 데이터 사용
+  if (currentChannel === "DA" && campaign.daily && campaign.daily.length > 0) {
     dailyData = campaign.daily;
-  } else if (account === "SA" && campaign.id) {
-    // SA: 서버에서 일별 데이터 가져오기
+  } else if (currentChannel === "SA" && campaign.id) {
     try {
       const { start, end } = getDateRange();
       const s = start.toISOString().split("T")[0];
       const e = end.toISOString().split("T")[0];
       const res = await fetch(`${API}/api/sa/campaigns/daily?id=${campaign.id}&start=${s}&end=${e}`);
-      if (res.ok) {
-        dailyData = await res.json();
-      }
+      if (res.ok) dailyData = await res.json();
     } catch (err) {
       row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">서버 연결 실패</div>';
       return;
@@ -184,7 +157,6 @@ async function toggleDaily(rowId, campaign, account) {
     return;
   }
 
-  // 일별 테이블 렌더
   let html = `<table class="daily-table">
     <thead><tr>
       <th>날짜</th><th class="num">광고비</th><th class="num">노출</th><th class="num">클릭</th>
@@ -212,38 +184,31 @@ async function toggleDaily(rowId, campaign, account) {
 
 function render() {
   renderKPI();
-  renderSummary(document.getElementById("saSummary"), saData);
-  renderSummary(document.getElementById("daSummary"), daData);
-  renderTable(document.getElementById("saTable"), saData);
-  renderTable(document.getElementById("daTable"), daData);
-}
+  renderTable();
 
-function renderDAOnly() {
-  renderKPI();
-  renderSummary(document.getElementById("daSummary"), daData);
-  renderTable(document.getElementById("daTable"), daData);
-}
-
-function renderSAOnly() {
-  renderKPI();
-  renderSummary(document.getElementById("saSummary"), saData);
-  renderTable(document.getElementById("saTable"), saData);
+  // SA일 때 업로드 버튼 숨기고, DA일 때 표시
+  document.getElementById("btnUploadWrap").classList.toggle("hidden", currentChannel === "SA");
 }
 
 // === 이벤트 ===
-document.getElementById("periodSelect").addEventListener("change", (e) => {
-  currentPeriod = e.target.value;
-  const customEl = document.getElementById("customDates");
-  if (currentPeriod === "custom") {
-    customEl.classList.remove("hidden");
-  } else {
-    customEl.classList.add("hidden");
-  }
+
+// 채널 탭
+document.querySelectorAll(".channel-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".channel-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    currentChannel = tab.dataset.channel;
+    render();
+  });
 });
 
-document.getElementById("applyDate").addEventListener("click", () => {
-  render();
+// 기간
+document.getElementById("periodSelect").addEventListener("change", (e) => {
+  currentPeriod = e.target.value;
+  document.getElementById("customDates").classList.toggle("hidden", currentPeriod !== "custom");
 });
+
+document.getElementById("applyDate").addEventListener("click", render);
 
 // === 서버 연동 ===
 const API = "http://localhost:5001";
@@ -255,8 +220,15 @@ function setStatus(msg, type = "") {
   if (type === "success") setTimeout(() => { el.textContent = ""; el.className = "status-bar"; }, 5000);
 }
 
-document.getElementById("btnRefreshSA").addEventListener("click", async () => {
-  const btn = document.getElementById("btnRefreshSA");
+// 새로고침 버튼
+document.getElementById("btnRefresh").addEventListener("click", async () => {
+  if (currentChannel === "SA") {
+    await refreshSA();
+  }
+});
+
+async function refreshSA() {
+  const btn = document.getElementById("btnRefresh");
   btn.disabled = true;
   setStatus("SA 데이터를 가져오는 중...");
 
@@ -269,23 +241,20 @@ document.getElementById("btnRefreshSA").addEventListener("click", async () => {
     if (!res.ok) throw new Error("실패");
     const data = await res.json();
     saData = data.map((c) => ({
-      id: c.id, name: c.name, type: c.type, impressions: c.impressions,
-      clicks: c.clicks, cost: c.cost, conversions: c.conversions, convValue: c.convValue,
+      id: c.id, name: c.name, impressions: c.impressions,
+      clicks: c.clicks, cost: c.cost,
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
       cartCount: c.cartCount || 0, account: "SA",
     }));
-    renderSAOnly();
+    render();
     setStatus(`SA 갱신 완료 — ${data.length}개 캠페인`, "success");
   } catch (e) {
-    setStatus("SA 실패 — 서버(python server.py)가 실행 중인지 확인하세요", "error");
+    setStatus("SA 실패 — 서버(python server.py) 실행 필요", "error");
   }
   btn.disabled = false;
-});
+}
 
-// === 초기 렌더 ===
-render();
-
-// === DA CSV 업로드 ===
+// DA CSV 업로드
 document.getElementById("daFileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -294,32 +263,29 @@ document.getElementById("daFileInput").addEventListener("change", (e) => {
   const reader = new FileReader();
   reader.onload = (evt) => {
     try {
-      const text = evt.target.result;
-      const parsed = parseNaverDaCsv(text);
+      const parsed = parseNaverDaCsv(evt.target.result);
       if (parsed.length > 0) {
         daData = parsed;
-        renderDAOnly();
-        setStatus(`DA 데이터 반영 완료 — ${parsed.length}일치 데이터`, "success");
+        render();
+        setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
       } else {
-        setStatus("CSV에서 데이터를 읽지 못했어요. 파일 형식을 확인해주세요.", "error");
+        setStatus("CSV에서 데이터를 읽지 못했어요", "error");
       }
     } catch (err) {
       setStatus("CSV 파싱 에러: " + err.message, "error");
     }
   };
   reader.readAsText(file, "utf-8");
-  e.target.value = ""; // 같은 파일 재업로드 허용
+  e.target.value = "";
 });
 
 function parseNaverDaCsv(text) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
 
-  // BOM 제거
   let header = lines[0].replace(/^\uFEFF/, "");
   const headers = header.split(",");
 
-  // 컬럼 인덱스 찾기
   const idx = (name) => headers.findIndex((h) => h.trim() === name);
   const iName = idx("캠페인 이름");
   const iDate = idx("기간");
@@ -329,10 +295,7 @@ function parseNaverDaCsv(text) {
   const iPurchase = idx("구매완료 수");
   const iCart = idx("장바구니 담기 수");
   const iPurchaseAmt = idx("구매완료 전환매출액");
-  const iConversions = idx("총 전환수");
-  const iConvValue = idx("총 전환매출액");
 
-  // 캠페인별 합산 + 일별 데이터 보존
   const campaigns = {};
 
   for (let i = 1; i < lines.length; i++) {
@@ -347,17 +310,9 @@ function parseNaverDaCsv(text) {
 
     if (!campaigns[name]) {
       campaigns[name] = {
-        name,
-        type: "DISPLAY",
-        account: "DA",
-        impressions: 0,
-        clicks: 0,
-        cost: 0,
-        conversions: 0,
-        convValue: 0,
-        purchaseCount: 0,
-        purchaseAmount: 0,
-        cartCount: 0,
+        name, account: "DA",
+        impressions: 0, clicks: 0, cost: 0,
+        purchaseCount: 0, purchaseAmount: 0, cartCount: 0,
         daily: [],
       };
     }
@@ -376,26 +331,18 @@ function parseNaverDaCsv(text) {
     c.purchaseCount += dayPurchase;
     c.cartCount += dayCart;
     c.purchaseAmount += dayPurchaseAmt;
-    c.conversions += toNum(cols[iConversions]);
-    c.convValue += toNum(cols[iConvValue]);
 
     if (date) {
-      c.daily.push({
-        date,
-        cost: dayCost,
-        impressions: dayImps,
-        clicks: dayClicks,
-        purchaseCount: dayPurchase,
-        cartCount: dayCart,
-        purchaseAmount: dayPurchaseAmt,
-      });
+      c.daily.push({ date, cost: dayCost, impressions: dayImps, clicks: dayClicks, purchaseCount: dayPurchase, cartCount: dayCart, purchaseAmount: dayPurchaseAmt });
     }
   }
 
-  // 일별 데이터 날짜 내림차순 정렬
   Object.values(campaigns).forEach((c) => {
     c.daily.sort((a, b) => b.date.localeCompare(a.date));
   });
 
   return Object.values(campaigns);
 }
+
+// === 초기 렌더 ===
+render();
