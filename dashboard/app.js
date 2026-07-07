@@ -141,7 +141,7 @@ document.getElementById("applyDate").addEventListener("click", () => {
 });
 
 // === 서버 연동 ===
-const API = "http://localhost:5000";
+const API = "http://localhost:5001";
 
 function setStatus(msg, type = "") {
   const el = document.getElementById("statusBar");

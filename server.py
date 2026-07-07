@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="dashboard", static_url_path="")
 CORS(app)
 
 BASE_DIR = os.path.dirname(__file__)
@@ -310,9 +310,14 @@ def health():
     return jsonify({"status": "ok", "time": datetime.now().isoformat()})
 
 
+@app.route("/")
+def serve_dashboard():
+    return app.send_static_file("index.html")
+
+
 if __name__ == "__main__":
     print("=" * 50)
     print("마케팅 자동화 로컬 서버 시작")
     print("http://localhost:5000")
     print("=" * 50)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
