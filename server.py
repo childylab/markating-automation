@@ -190,6 +190,120 @@ def get_sa_campaigns():
     return jsonify(output)
 
 
+@app.route("/api/sa/campaigns/daily", methods=["GET"])
+def get_sa_campaigns_daily():
+    """SA 캠페인별 일별 성과 데이터"""
+    import requests as req
+
+    campaign_id = request.args.get("id")
+    start_date = request.args.get("start", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
+    end_date = request.args.get("end", datetime.now().strftime("%Y-%m-%d"))
+
+    if not campaign_id:
+        return jsonify({"error": "id 파라미터 필요"}), 400
+
+    uri = "/stats"
+    fields = json.dumps(["impCnt", "clkCnt", "salesAmt", "ctr", "cpc", "ccnt", "convAmt"])
+    time_range = json.dumps({"since": start_date, "until": end_date})
+
+    params = {
+        "ids": [campaign_id],
+        "fields": fields,
+        "timeRange": time_range,
+        "breakdown": "daily",
+    }
+
+    r = req.get(SA_BASE_URL + uri, params=params, headers=sa_header("GET", uri))
+    if r.status_code != 200:
+        return jsonify({"error": "조회 실패"}), 500
+
+    result = r.json()
+    data = []
+    if isinstance(result, dict) and "data" in result:
+        data = result["data"]
+    elif isinstance(result, list):
+        data = result
+
+    # 일별 purchase 데이터도 가져오기
+    purchase_daily = get_purchase_conversions_daily(campaign_id)
+
+    output = []
+    for d in data:
+        date = d.get("statDt", "")
+        pdata = purchase_daily.get(date, {"purchaseCount": 0, "purchaseAmount": 0, "cartCount": 0})
+        output.append({
+            "date": date,
+            "cost": d.get("salesAmt", 0),
+            "impressions": d.get("impCnt", 0),
+            "clicks": d.get("clkCnt", 0),
+            "ctr": d.get("ctr", 0),
+            "conversions": d.get("ccnt", 0),
+            "convValue": d.get("convAmt", 0),
+            "purchaseCount": pdata["purchaseCount"],
+            "purchaseAmount": pdata["purchaseAmount"],
+            "cartCount": pdata["cartCount"],
+        })
+
+    output.sort(key=lambda x: x["date"], reverse=True)
+    return jsonify(output)
+
+
+def get_purchase_conversions_daily(campaign_id):
+    """특정 캠페인의 일별 purchase/add_to_cart 데이터"""
+    import requests as req
+
+    uri = "/stat-reports"
+    r = req.get(SA_BASE_URL + uri, headers=sa_header("GET", uri))
+    if r.status_code != 200:
+        return {}
+
+    reports = r.json()
+    if not isinstance(reports, list):
+        return {}
+
+    conv_reports = [
+        rp for rp in reports
+        if rp.get("reportTp") == "AD_CONVERSION_DETAIL" and rp.get("status") == "BUILT"
+    ]
+
+    result = {}
+
+    for rp in conv_reports[:30]:
+        download_url = rp.get("downloadUrl", "")
+        if not download_url:
+            continue
+
+        r = req.get(download_url, headers=sa_header("GET", "/report-download"))
+        if r.status_code != 200:
+            continue
+
+        lines = r.content.decode("utf-8", errors="replace").strip().split("\n")
+        for line in lines:
+            cols = line.split("\t")
+            if len(cols) < 15:
+                continue
+            if cols[2].strip() != campaign_id:
+                continue
+
+            date = cols[0].strip()
+            conv_type = cols[12].strip()
+            conv_count = int(cols[13].strip()) if cols[13].strip().isdigit() else 0
+            conv_amount = int(cols[14].strip()) if cols[14].strip().isdigit() else 0
+
+            if conv_type in ("purchase", "add_to_cart"):
+                if date not in result:
+                    result[date] = {"purchaseCount": 0, "purchaseAmount": 0, "cartCount": 0}
+                if conv_type == "purchase":
+                    result[date]["purchaseCount"] += conv_count
+                    result[date]["purchaseAmount"] += conv_amount
+                elif conv_type == "add_to_cart":
+                    result[date]["cartCount"] += conv_count
+
+        time.sleep(0.2)
+
+    return result
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "time": datetime.now().isoformat()})
