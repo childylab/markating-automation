@@ -1,134 +1,222 @@
-# 마케팅 퍼포먼스 대시보드
+# Marketing Performance Dashboard
 
-네이버 광고 SA API + DA CSV 업로드 기반 마케팅 성과 대시보드
+네이버 광고 SA API와 DA CSV 업로드를 기반으로 만든 마케팅 성과 대시보드입니다.
 
----
+목표는 마케터가 별도 스프레드시트나 Baserow 테이블을 먼저 정리하지 않아도, 광고 매체에서 나온 순수 지표를 직접 수집해 성과를 확인하는 것입니다. 현재는 네이버 SA 검색광고를 API로 직접 연동하고, 네이버 DA 성과형 디스플레이는 CSV 업로드로 처리합니다.
 
-## 프로젝트 구조
+## Current Status
 
+- 네이버 SA 검색광고 API 연동 완료
+- SA 캠페인 목록, 성과 데이터, 일별 데이터 조회 완료
+- SA 구매전환은 `AD_CONVERSION_DETAIL` 리포트에서 `purchase`만 분리해 계산
+- 네이버 DA CSV 업로드, 파싱, 기간 필터, 일별 상세 토글 완료
+- SA/DA 채널 전환, KPI 카드, 캠페인 테이블, 프로그레스바 완료
+- Flask 로컬 API 프록시와 Netlify 정적 배포 구성 완료
+- n8n SA Webhook 워크플로우 백업 포함
+
+## Project Structure
+
+```text
+.
+├── README.md                    # 프로젝트 개요, 명세, 운영 메모
+├── DESIGN.md                    # Genesis 디자인 시스템 명세
+├── index.html                   # 대시보드 화면
+├── style.css                    # 화면 스타일
+├── app.js                       # 프론트 상태, 렌더링, SA 호출, DA CSV 파싱
+├── server.py                    # Flask 로컬 API 프록시
+├── sa_report.py                 # SA CSV 리포트 수집 스크립트
+├── test_api.py                  # SA/DA API 인증 및 성과 조회 테스트
+├── test_da_cross.py             # Customer ID/API Key 조합 테스트
+├── requirements.txt             # Python 의존성
+├── netlify.toml                 # Netlify 배포 설정
+├── n8n_naver_sa_webhook.json    # n8n 워크플로우 백업
+└── 애드부스트 성과업로드 예시.csv     # DA 업로드 샘플
 ```
-├── index.html          # 대시보드 프론트 (Genesis 디자인, 사이드바 레이아웃)
-├── style.css           # Genesis 디자인시스템 CSS
-├── app.js              # 대시보드 로직 (SA API 호출, DA CSV 파싱, KPI, 테이블)
-├── server.py           # Flask 로컬 API 프록시 (n8n 전환 후 백업용)
-├── sa_report.py        # SA 리포트 CSV 수집 스크립트 (독립 실행)
-├── requirements.txt    # Python 의존성
-├── netlify.toml        # Netlify 배포 설정
-├── design.md           # Genesis 디자인시스템 명세
-├── .env                # API 키 (gitignore, 로컬 전용)
-├── n8n_naver_sa_webhook.json  # n8n 워크플로우 백업
-└── 문서/
-    ├── 네이버광고_API_대시보드_자동화_검토보고서.md
-    ├── 마케팅_대시보드_기획방향.md
-    └── 프로젝트_명세.md
+
+로컬 전용 파일인 `.env`, `.naver_cookies.json`, `.venv/`, `output/`은 Git에 올리지 않습니다.
+
+## Data Sources
+
+| Channel | Source | Current Method | Notes |
+| --- | --- | --- | --- |
+| Naver SA | Search Ads API | API direct integration | 공식 API로 안정적으로 자동화 가능 |
+| Naver DA | Performance Display / AdVoost CSV | Manual CSV upload | DA API는 공식 파트너사 전용이라 일반 광고주 접근 불가 |
+| Meta Ads | Meta Ads API | Planned | Phase 2 |
+| Google Ads | Google Ads API | Planned | Phase 2 |
+| Commerce | Smart Store order data etc. | Planned | 실매출 기반 ROAS 계산용 |
+
+## Architecture
+
+현재 구조:
+
+```text
+Naver SA API ───────────────┐
+                            ├── Flask API Proxy ── Frontend Dashboard
+Naver DA CSV Upload ────────┘
 ```
 
----
+목표 구조:
 
-## 에이전트 작업 규칙
+```text
+Ad Platform APIs / CSV Upload
+        ↓
+Collector / n8n Workflow
+        ↓
+Internal DB
+        ↓
+Frontend Dashboard
+```
 
-### 1. n8n 노드 정보 동기화
-n8n 관련 노드 정보는 md 파일(`n8n_워크플로우_현황.md`)로 항상 동기화하여 작업 이력 및 현재 세팅 상황을 에이전트가 신속히 파악 및 학습할 수 있도록 한다.
+장기적으로는 매번 API를 직접 호출하지 않고 내부 DB에 캠페인/날짜 단위 일별 데이터를 적재한 뒤, 대시보드는 저장소에서 빠르게 조회하는 방식으로 전환합니다.
 
-### 2. n8n 공식 가이드 참조
-n8n 관련 워크플로우 작업을 할 땐, https://docs.n8n.io/ 및 하위 경로에 있는 다양한 가이드를 참조하는 것이 정확한 작업에 도움이 된다. 새로운 요구사항이 있을 경우, 공식 n8n 가이드를 참조하여 작업하도록 한다.
+## Metrics
 
-### 3. 목표 달성까지 자율 수행
-모든 지시사항은 작업이 완료되고 원하는 목표가 달성될 때까지 스스로 학습하고 원인을 찾고 다각도로 개선한다. 작업만 완료됐다고 멈추지 말고, 실제 목표가 달성됐는지 확인하고 안됐으면 다시 다르게 원인을 찾거나 추가적으로 검토하여 개선하여 목표를 달성한다 (토큰이 많이 소모되어도 상관 없다).
+### Campaign Columns
 
-### 4. n8n 공식 지원 방법 우선
-가급적 문제 해결은 n8n에서 공식 지원하는 방법을 사용한다.
+| Field | Description |
+| --- | --- |
+| `campaign_id` | 캠페인 ID |
+| `campaign_name` | 캠페인명 |
+| `campaign_type` | 캠페인 유형 |
+| `cost` | 광고비 |
+| `impressions` | 노출수 |
+| `clicks` | 클릭수 |
+| `ctr` | 클릭률 |
+| `cart_count` | 장바구니 수 |
+| `purchase_count` | 구매전환 수 |
+| `purchase_amount` | 구매전환 매출액 |
+| `purchase_roas` | 구매 ROAS |
+| `imp_to_purchase` | 노출 대비 구매율 |
+| `click_to_purchase` | 클릭 대비 구매율 |
+| `date` | 일별 상세 날짜 |
 
-### 5. 문제 해결 히스토리
-해결한 문제는 히스토리를 남겨서 같은 문제가 발생하지 않도록 한다.
+### Main Table
 
----
+캠페인 | 광고비 | 노출 | 클릭 | CTR | 장바구니 | 구매 | 구매액 | 구매ROAS | 노출→구매 | 클릭→구매
 
-## n8n 워크플로우 현황
+### Daily Detail Table
 
-### [DX팀] 네이버 SA 검색광고 API
-- **워크플로우 ID:** `6IyY4gMgDqHxYpbTdXd6V`
-- **Webhook URL:** `https://n8n.childylab.com/webhook/naver-sa-campaigns`
-- **상태:** Active
-- **호출 방법:** `GET /webhook/naver-sa-campaigns?start=YYYY-MM-DD&end=YYYY-MM-DD`
+날짜 | 광고비 | 노출 | 클릭 | 장바구니 | 구매 | 구매액 | 구매ROAS
 
-**노드 구성:**
-1. Webhook (GET, path: naver-sa-campaigns, responseMode: responseNode)
-2. 캠페인 서명메시지 (Code: 타임스탬프 + signMessage 생성)
-3. HMAC 서명 (캠페인) (Crypto: action=hmac, SHA256, base64, secret=SA_SECRET_KEY)
-4. 네이버 캠페인 조회 (HTTP Request: GET /ncc/campaigns)
-5. Stats 서명메시지 (Code: 캠페인 목록 수집 + stats용 signMessage + fullUrl 생성)
-6. HMAC 서명 (Stats) (Crypto: 동일)
-7. 네이버 Stats 조회 (HTTP Request: GET /stats?ids=...&fields=...&timeRange=...)
-8. 리포트 서명메시지 (Code: /stat-reports용 signMessage)
-9. HMAC 서명 (리포트) (Crypto: 동일)
-10. 리포트 목록 조회 (HTTP Request: GET /stat-reports)
-11. 전환 리포트 다운로드 및 파싱 (Code: this.helpers.httpRequest로 AD_CONVERSION_DETAIL 리포트 다운로드 → purchase/add_to_cart 파싱)
-12. 데이터 조합 (Code: stats + purchaseMap 합쳐서 최종 JSON)
-13. 응답 반환 (Respond to Webhook: JSON + CORS)
+## Naver Ads Findings
 
-**SA API 인증 정보:**
-- API Key: `.env` 파일 참조 (SA_API_KEY)
-- Secret Key: `.env` 파일 참조 (SA_SECRET_KEY)
-- Customer ID: 3303451
+### SA
 
----
+SA는 네이버 검색광고 API(`https://api.searchad.naver.com`)로 자동화할 수 있습니다.
 
-## 문제 해결 히스토리
+- 인증: API Key + Secret Key + Customer ID + HMAC-SHA256 signature
+- 주요 엔드포인트: `/ncc/campaigns`, `/ncc/adgroups`, `/stats`, `/stat-reports`
+- 검증 결과: SA 계정은 캠페인 목록과 최근 1개월 성과 데이터 조회 성공
 
-### 1. n8n Crypto 노드 `sign` vs `hmac`
-- **문제:** Crypto 노드의 `action: "sign"`은 RSA/PEM 키 전용. HMAC-SHA256에 사용하면 `error:1E08010C:DECODER routines::unsupported` 에러 발생.
-- **해결:** `action: "hmac"`으로 변경. 파라미터: `type=SHA256`, `encoding=base64`, `secret=비밀키`, `value=서명메시지`, `dataPropertyName=data`
+SA의 `ccnt`, `convAmt`는 구매, 장바구니, 기타 전환이 합산될 수 있으므로 구매 ROAS 계산에는 그대로 쓰지 않습니다. 정확한 구매 ROAS는 `AD_CONVERSION_DETAIL` 리포트에서 `purchase` 전환만 필터링해 계산합니다.
 
-### 2. n8n Code 노드에서 `require('crypto')` 차단
-- **문제:** n8n 호스팅 환경에서 `Module 'crypto' is disallowed` 에러.
-- **해결:** Crypto 노드(action=hmac)를 사용하여 서명 생성. Code 노드는 메시지 조합만 담당.
-- **근본 해결:** 서버에 `NODE_FUNCTION_ALLOW_BUILTIN=crypto` 환경변수 추가하면 Code 노드에서 crypto 모듈 사용 가능.
+### DA
 
-### 3. n8n HTTP Request에서 네이버 stats `ids` 파라미터 형식
-- **문제:** Query Parameters에 배열을 넣으면 `잘못된 파라미터 형식입니다` 에러.
-- **해결:** Code 노드에서 `ids=id1&ids=id2&...` 형태의 fullUrl을 직접 조합하고, HTTP Request 노드의 URL에 expression으로 주입. Send Query는 끔.
+DA 성과형 디스플레이와 애드부스트는 현재 CSV 업로드 방식으로 처리합니다.
 
-### 4. n8n에서 캠페인 목록이 개별 아이템으로 전달됨
-- **문제:** HTTP Request가 배열 응답을 받으면 각 요소를 별도 item으로 넘김. `$input.first().json`으로는 첫 번째만 가져옴.
-- **해결:** `$input.all().map(item => item.json)` 사용.
+- DA API는 공식 파트너사에 한해 제공됩니다.
+- 일반 광고주 계정에서는 API 인증이 통과해도 DA 캠페인이 조회되지 않을 수 있습니다.
+- Playwright/Selenium 기반 보고서 자동 다운로드는 네이버의 자동화 탐지와 추가 인증 요구 때문에 운영 방식으로 채택하지 않습니다.
 
-### 5. Code 노드에서 배열을 json으로 반환 시 에러
-- **문제:** `return [{ json: output }]`에서 output이 배열이면 `A 'json' property isn't an object` 에러.
-- **해결:** `return [{ json: { campaigns: output } }]`로 객체에 감싸고, 응답 반환에서 `$json.campaigns` 참조.
+## n8n Workflow
 
-### 6. 전환 리포트 다운로드 — HTTP Request 노드 실패
-- **문제:** 리포트 downloadUrl을 HTTP Request 노드의 URL로 넣으면 `Bad request` 에러.
-- **해결:** 별도 HTTP Request 노드 대신 Code 노드 내 `this.helpers.httpRequest({ method: 'GET', url: ... })`로 직접 호출.
-- **현재 이슈:** 응답이 string이 아닌 형태로 와서 파싱이 안 됨. 추가 조사 필요.
+### Current SA Webhook
 
-### 7. DA(성과형 디스플레이) API 접근 불가
-- **문제:** 네이버 DA API는 공식 파트너사에만 제공 (2026.05.11 FAQ 확인).
-- **해결:** CSV 수동 업로드 방식 채택. 대시보드에서 파일 선택 → 파싱 → 표시.
+- Workflow: `[DX팀] 네이버 SA 검색광고 API`
+- Workflow ID: `6IyY4gMgDqHxYpbTdXd6V`
+- Webhook: `GET /webhook/naver-sa-campaigns?start=YYYY-MM-DD&end=YYYY-MM-DD`
+- Backup file: `n8n_naver_sa_webhook.json`
 
-### 8. Playwright 브라우저 자동화 실패
-- **문제:** 네이버가 Playwright/Selenium을 적극 감지·차단. 무한 추가인증 요구.
-- **해결:** Playwright 방식 포기. DA는 CSV 업로드로 대체.
+### Node Flow
 
-### 9. SA stat API의 `convAmt`에 장바구니 금액 포함
-- **문제:** `convAmt`에 purchase + add_to_cart + 기타 모든 전환이 합산되어 ROAS 8000%+ 발생.
-- **해결:** AD_CONVERSION_DETAIL 리포트에서 `purchase` 전환만 필터링하여 정확한 구매 ROAS 계산.
+1. Webhook
+2. 캠페인 서명 메시지 생성
+3. HMAC 서명
+4. 네이버 캠페인 조회
+5. Stats 서명 메시지 생성
+6. HMAC 서명
+7. 네이버 Stats 조회
+8. 리포트 서명 메시지 생성
+9. HMAC 서명
+10. 리포트 목록 조회
+11. 전환 리포트 다운로드 및 파싱
+12. 데이터 조합
+13. 응답 반환
 
----
+### n8n Notes
 
-## 배포
+- Crypto 노드는 RSA `sign`이 아니라 HMAC 용도인 `hmac` action을 사용합니다.
+- 호스팅 환경에서 Code 노드의 `require("crypto")`가 막힐 수 있으므로, 서명은 Crypto 노드로 생성합니다.
+- 네이버 `/stats`의 `ids`는 `ids=id1&ids=id2` 형태로 직접 URL을 조합하는 편이 안전합니다.
+- HTTP Request 노드가 배열 응답을 개별 item으로 넘길 수 있으므로 `$input.all()` 사용을 전제로 처리합니다.
 
-- **Netlify:** https://marketing-automation-childy.netlify.app/
-- **GitHub:** https://github.com/childylab/markating-automation
-- **n8n:** https://n8n.childylab.com/workflow/6IyY4gMgDqHxYpbTdXd6V
+## Roadmap
 
----
+### Phase 1: Naver SA/DA
 
-## 로컬 개발 (필요 시)
+- [x] 네이버 SA API 직연동
+- [x] 네이버 SA 구매전환 분리
+- [x] 네이버 SA 일별 데이터 조회
+- [x] 네이버 DA CSV 업로드
+- [x] 기간 필터와 채널 전환
+- [x] KPI 카드와 캠페인 테이블
+- [ ] DA CSV 중복 처리 옵션: 덮어쓰기 / 건너뛰기
+- [ ] 현재 뷰 기준 CSV 또는 Excel 다운로드
+- [ ] 캠페인별 일별 추이 차트
+- [ ] 캠페인 비교 막대 차트
+
+### Phase 2: More Ad Platforms
+
+- [ ] Meta Ads API 연동
+- [ ] Google Ads API 연동
+
+### Phase 3: Owned Channel Analytics
+
+- [ ] Instagram Insights
+- [ ] YouTube Analytics
+
+### Phase 4: Commerce Data
+
+- [ ] 스마트스토어 주문 API 등 실매출 데이터 연동
+- [ ] 광고비 대비 실제 매출 기반 ROAS 계산
+
+## Local Development
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python server.py  # localhost:5001
+python server.py
 ```
+
+서버는 기본적으로 `http://localhost:5001`에서 실행됩니다.
+
+프런트는 `index.html`을 열거나 Flask 서버를 통해 접근할 수 있습니다. SA 데이터를 불러오려면 `.env`에 네이버 광고 API 인증 정보가 필요합니다.
+
+## Environment Variables
+
+```env
+SA_API_KEY=
+SA_SECRET_KEY=
+SA_CUSTOMER_ID=
+DA_API_KEY=
+DA_SECRET_KEY=
+DA_CUSTOMER_ID=
+```
+
+`.env`는 로컬 전용이며 Git에 커밋하지 않습니다.
+
+## Deployment
+
+- Netlify: `https://marketing-automation-childy.netlify.app/`
+- GitHub: `https://github.com/childylab/markating-automation`
+- n8n: `https://n8n.childylab.com/workflow/6IyY4gMgDqHxYpbTdXd6V`
+
+## Documentation Policy
+
+루트 문서는 최대한 분산하지 않습니다.
+
+- `README.md`: 프로젝트 목적, 명세, 운영 메모, 로드맵
+- `DESIGN.md`: 디자인 시스템과 시각 규칙
+
+새로운 조사 내용이나 문제 해결 이력은 별도 Markdown 파일을 만들기보다 먼저 `README.md`에 통합합니다. 디자인 토큰이나 UI 규칙처럼 프로젝트 설명과 성격이 다른 내용만 `DESIGN.md`에 둡니다.
