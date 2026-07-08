@@ -203,17 +203,6 @@ async function toggleDaily(rowId, campaign) {
 
   if (campaign.daily && campaign.daily.length > 0) {
     dailyData = campaign.daily;
-  } else if (currentChannel === "SA" && campaign.id) {
-    try {
-      const { start, end } = getDateRange();
-      const s = start.toISOString().split("T")[0];
-      const e = end.toISOString().split("T")[0];
-      const res = await fetch(`${API}/naver-sa-campaigns/daily?id=${campaign.id}&start=${s}&end=${e}`);
-      if (res.ok) dailyData = await res.json();
-    } catch (err) {
-      row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">서버 연결 실패</div>';
-      return;
-    }
   }
 
   if (dailyData.length === 0) {
@@ -334,27 +323,11 @@ async function loadSAData() {
       id: c.id, name: c.name, impressions: c.impressions,
       clicks: c.clicks, cost: c.cost,
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
-      cartCount: c.cartCount || 0, account: "SA", daily: [],
+      cartCount: c.cartCount || 0, account: "SA",
+      daily: (c.daily || []).map(d => ({ date: d.date, purchaseCount: d.purchaseCount || 0, purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0, cost: 0, impressions: 0, clicks: 0 })),
     }));
 
-    showProgress(`캠페인 ${saData.length}개 로드 완료. 일별 데이터 가져오는 중...`, 30);
-
-    // 2. 각 캠페인별 일별 데이터
-    const activeCampaigns = saData.filter((c) => c.impressions > 0 || c.clicks > 0 || c.cost > 0);
-    for (let i = 0; i < activeCampaigns.length; i++) {
-      const c = activeCampaigns[i];
-      const pct = 30 + Math.round(((i + 1) / activeCampaigns.length) * 70);
-      showProgress(`일별 데이터: ${c.name} (${i + 1}/${activeCampaigns.length})`, pct);
-
-      try {
-        const dRes = await fetch(`${API}/naver-sa-campaigns/daily?id=${c.id}&start=${s}&end=${e}`);
-        if (dRes.ok) {
-          c.daily = await dRes.json();
-        }
-      } catch (err) {
-        // 개별 실패는 무시
-      }
-    }
+    showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
 
     hideProgress();
     render();
