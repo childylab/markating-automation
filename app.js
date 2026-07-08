@@ -6,7 +6,7 @@ let daRawData = [];
 
 // === 상태 ===
 let currentChannel = "SA";
-let currentPeriod = "30";
+let currentPeriod = "7ex";
 
 // === 유틸 ===
 function fmt(n) {
