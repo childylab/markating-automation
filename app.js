@@ -327,7 +327,7 @@ async function loadSAData() {
       clicks: c.clicks, cost: c.cost,
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
       cartCount: c.cartCount || 0, account: "SA",
-      daily: (c.daily || []).map(d => ({ date: d.date, purchaseCount: d.purchaseCount || 0, purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0, cost: null, impressions: null, clicks: null })),
+      daily: (c.daily || []).map(d => ({ date: d.date, purchaseCount: d.purchaseCount || 0, purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0, cost: d.cost != null ? d.cost : null, impressions: d.impressions != null ? d.impressions : null, clicks: d.clicks != null ? d.clicks : null })),
     }));
 
     showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
