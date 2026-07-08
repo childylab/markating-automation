@@ -167,12 +167,15 @@ function buildDailyHtml(dailyData) {
     </tr></thead><tbody>`;
 
   dailyData.forEach((d) => {
-    const roas = d.cost && d.purchaseAmount ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
+    const roas = (d.cost != null && d.cost > 0 && d.purchaseAmount) ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
+    const costStr = d.cost === null || d.cost === undefined ? "-" : fmtWon(d.cost);
+    const impStr = d.impressions === null || d.impressions === undefined ? "-" : fmt(d.impressions);
+    const clkStr = d.clicks === null || d.clicks === undefined ? "-" : fmt(d.clicks);
     html += `<tr>
       <td>${d.date}</td>
-      <td class="num">${fmtWon(d.cost || 0)}</td>
-      <td class="num">${fmt(d.impressions || 0)}</td>
-      <td class="num">${fmt(d.clicks || 0)}</td>
+      <td class="num">${costStr}</td>
+      <td class="num">${impStr}</td>
+      <td class="num">${clkStr}</td>
       <td class="num">${fmt(d.cartCount || 0)}</td>
       <td class="num">${fmt(d.purchaseCount || 0)}</td>
       <td class="num">${fmtWon(d.purchaseAmount || 0)}</td>
@@ -324,7 +327,7 @@ async function loadSAData() {
       clicks: c.clicks, cost: c.cost,
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
       cartCount: c.cartCount || 0, account: "SA",
-      daily: (c.daily || []).map(d => ({ date: d.date, purchaseCount: d.purchaseCount || 0, purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0, cost: 0, impressions: 0, clicks: 0 })),
+      daily: (c.daily || []).map(d => ({ date: d.date, purchaseCount: d.purchaseCount || 0, purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0, cost: null, impressions: null, clicks: null })),
     }));
 
     showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
