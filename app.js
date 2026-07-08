@@ -242,10 +242,10 @@ document.querySelectorAll(".nav-item[data-channel]").forEach((tab) => {
     const subEl = document.getElementById("pageSub");
     if (currentChannel === "SA") {
       titleEl.textContent = "SA 검색광고";
-      subEl.textContent = "계정 1667291 · 남도마켓 대행";
+      subEl.textContent = "";
     } else {
       titleEl.textContent = "DA 디스플레이";
-      subEl.textContent = "CSV 기반 성과 분석";
+      subEl.textContent = "";
     }
 
     render();
