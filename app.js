@@ -712,76 +712,36 @@ function renderSns() {
 
 function renderSnsInstagram(body) {
   const data = snsData.instagram;
+  body.innerHTML = `
+    <div class="sns-kpi-grid">
+      <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${data ? fmt(data.metrics.followers || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">${data ? fmt(data.metrics.reach || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">${data ? data.metrics.engagementRate.toFixed(2) + "%" : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">프로필 방문</span><span class="kpi-value">${data ? fmt(data.metrics.profileVisits || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">링크 클릭</span><span class="kpi-value">${data ? fmt(data.metrics.linkClicks || 0) : "—"}</span></div>
+    </div>`;
   if (!data) {
-    body.innerHTML = `
-      <div class="sns-kpi-grid">
-        <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">프로필 방문</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">링크 클릭</span><span class="kpi-value">—</span></div>
-      </div>
-      <div class="sns-connect-card">
-        <div class="info-card">
-          <div class="info-card-icon">📸</div>
-          <div class="info-card-content">
-            <h4 class="info-card-title">인스타그램 연동</h4>
-            <p class="info-card-desc">Meta Graph API를 통해 인스타그램 비즈니스 계정의 인사이트를 가져옵니다.</p>
-            <ul class="info-list">
-              <li>팔로워 수 및 증감 추이</li>
-              <li>게시물별 도달/노출/인게이지먼트</li>
-              <li>스토리 조회수, 프로필 방문, 링크 클릭</li>
-              <li>기간별 인게이지먼트율 추이</li>
-            </ul>
-            <div style="margin-top:16px;">
-              <button class="btn btn-primary btn-sm" id="btnConnectInstagram">인스타그램 연동 설정</button>
-            </div>
-            <p class="info-card-desc" style="margin-top:12px; color: var(--color-text-muted);">설정 > API 연동에서 Meta Graph API 토큰을 등록해주세요.</p>
-          </div>
-        </div>
-      </div>`;
-    const btnConnect = document.getElementById("btnConnectInstagram");
-    if (btnConnect) btnConnect.addEventListener("click", () => { window.location.hash = "#settings/api"; });
-    return;
+    body.innerHTML += `<div class="empty-state"><p class="empty-text">인스타그램 데이터가 없습니다. 설정 > API 연동에서 Meta Graph API를 연결해주세요.</p></div>`;
+  } else {
+    renderSnsDataView(body, data, "instagram");
   }
-  // 데이터가 있을 때 렌더 (향후 구현)
-  renderSnsDataView(body, data, "instagram");
 }
 
 function renderSnsThreads(body) {
   const data = snsData.threads;
+  body.innerHTML = `
+    <div class="sns-kpi-grid">
+      <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${data ? fmt(data.metrics.followers || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">${data ? fmt(data.metrics.reach || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">${data ? data.metrics.engagementRate.toFixed(2) + "%" : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">좋아요</span><span class="kpi-value">${data ? fmt(data.metrics.likes || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">리포스트</span><span class="kpi-value">${data ? fmt(data.metrics.reposts || 0) : "—"}</span></div>
+    </div>`;
   if (!data) {
-    body.innerHTML = `
-      <div class="sns-kpi-grid">
-        <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">좋아요</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card"><span class="kpi-label">리포스트</span><span class="kpi-value">—</span></div>
-      </div>
-      <div class="sns-connect-card">
-        <div class="info-card">
-          <div class="info-card-icon">🧵</div>
-          <div class="info-card-content">
-            <h4 class="info-card-title">쓰레드 연동</h4>
-            <p class="info-card-desc">Threads API를 통해 쓰레드 계정의 인사이트를 가져옵니다.</p>
-            <ul class="info-list">
-              <li>팔로워 수 및 증감</li>
-              <li>게시물별 조회수/좋아요/답글/리포스트/인용</li>
-              <li>기간별 도달/인게이지먼트 추이</li>
-            </ul>
-            <div style="margin-top:16px;">
-              <button class="btn btn-primary btn-sm" id="btnConnectThreads">쓰레드 연동 설정</button>
-            </div>
-            <p class="info-card-desc" style="margin-top:12px; color: var(--color-text-muted);">설정 > API 연동에서 Threads API 토큰을 등록해주세요.</p>
-          </div>
-        </div>
-      </div>`;
-    const btnConnect = document.getElementById("btnConnectThreads");
-    if (btnConnect) btnConnect.addEventListener("click", () => { window.location.hash = "#settings/api"; });
-    return;
+    body.innerHTML += `<div class="empty-state"><p class="empty-text">쓰레드 데이터가 없습니다. 설정 > API 연동에서 Threads API를 연결해주세요.</p></div>`;
+  } else {
+    renderSnsDataView(body, data, "threads");
   }
-  renderSnsDataView(body, data, "threads");
 }
 
 function renderSnsDataView(body, data, platform) {
@@ -847,7 +807,7 @@ function renderRoiAnalysis() {
 function renderDataManagement() {
   const body = document.getElementById("dataManagementBody");
   if (!body) return;
-  const sub = currentSubPage || "upload";
+  const sub = currentSubPage || "status";
   updateSubNav("dataSubNav", sub);
   if (sub === "upload") {
     body.innerHTML = `<div class="upload-section">
