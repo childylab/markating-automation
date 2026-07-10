@@ -406,7 +406,7 @@ function renderTable() {
   if (!tbody) return;
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="14" class="load-cell">
+    tbody.innerHTML = `<tr><td colspan="15" class="load-cell">
       <button class="btn-load" id="btnLoadData">데이터 로드</button>
       <span class="load-hint">필터 조건을 설정하고 [조회] 버튼을 누르세요</span>
     </td></tr>`;
@@ -437,6 +437,9 @@ function renderTable() {
       roas: c.cost ? (c.purchaseAmount / c.cost) * 100 : 0,
       impToPurchase: c.impressions && c.purchaseCount ? (c.purchaseCount / c.impressions) * 100 : 0,
       clkToPurchase: c.clicks && c.purchaseCount ? (c.purchaseCount / c.clicks) * 100 : 0,
+      logisticsCost: (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100),
+      platformFeeCost: (c.purchaseAmount || 0) * (costSettings.platformFee / 100),
+      roi: c.cost > 0 ? (((c.purchaseAmount || 0) - (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100) - (c.purchaseAmount || 0) * (costSettings.platformFee / 100)) / c.cost) * 100 : 0,
     };
   });
 
@@ -462,8 +465,9 @@ function renderTable() {
     const purchaseRoas = c.cost && c.purchaseAmount ? ((c.purchaseAmount / c.cost) * 100).toFixed(1) + "%" : "-";
     const roasClass = purchaseRoas !== "-" && parseFloat(purchaseRoas) >= 300 ? "roas-high" : "";
     const ctr = c.impressions ? ((c.clicks / c.impressions) * 100).toFixed(2) + "%" : "-";
-    const impToPurchase = c.impressions && c.purchaseCount ? ((c.purchaseCount / c.impressions) * 100).toFixed(3) + "%" : "-";
-    const clkToPurchase = c.clicks && c.purchaseCount ? ((c.purchaseCount / c.clicks) * 100).toFixed(1) + "%" : "-";
+    const logStr = c.logisticsCost > 0 ? fmtWon(Math.round(c.logisticsCost)) : "-";
+    const platStr = c.platformFeeCost > 0 ? fmtWon(Math.round(c.platformFeeCost)) : "-";
+    const roiStr = c.cost > 0 && (c.logisticsCost > 0 || c.platformFeeCost > 0) ? c.roi.toFixed(1) + "%" : "-";
     const rowId = `daily-${currentChannel}-${idx}`;
 
     const row = document.createElement("tr");
@@ -481,8 +485,9 @@ function renderTable() {
       <td class="num">${fmt(c.purchaseCount || 0)}</td>
       <td class="num">${fmtWon(c.purchaseAmount || 0)}</td>
       <td class="num ${roasClass}">${purchaseRoas}</td>
-      <td class="num">${impToPurchase}</td>
-      <td class="num">${clkToPurchase}</td>
+      <td class="num">${logStr}</td>
+      <td class="num">${platStr}</td>
+      <td class="num">${roiStr}</td>
     `;
     row.addEventListener("click", () => toggleDaily(rowId, c));
     tbody.appendChild(row);
@@ -491,10 +496,10 @@ function renderTable() {
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
     if (c.daily && c.daily.length > 0) {
-      dailyRow.innerHTML = `<td colspan="14" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
+      dailyRow.innerHTML = `<td colspan="15" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
       dailyRow.dataset.loaded = "true";
     } else {
-      dailyRow.innerHTML = `<td colspan="14" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+      dailyRow.innerHTML = `<td colspan="15" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
     }
     tbody.appendChild(dailyRow);
   });
