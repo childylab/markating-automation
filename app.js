@@ -290,6 +290,9 @@ function renderKPI() {
   setKpi("kpiConvRate", convRate);
   setKpi("kpiRevenue", revenue ? fmtWon(revenue) : "-");
   setKpi("kpiRoas", roas);
+  setKpi("kpiNaturalRevenue", "-"); // 자연 매출: 몰 API 연동 전 (향후 추가)
+  setKpi("kpiAdRevenue", revenue ? fmtWon(revenue) : "-"); // 광고 매출 = 현재 구매전환액
+  setKpi("kpiAdRevenueRatio", "-"); // 전체 매출 미연동 → 비중 계산 불가
   setKpi("kpiCogs", "-"); // ERP 연동 전
   setKpi("kpiLogistics", revenue ? fmtWon(Math.round(totalLogistics)) : "-");
   setKpi("kpiPlatformFee", totalPlatformFee > 0 ? fmtWon(Math.round(totalPlatformFee)) : "-");
