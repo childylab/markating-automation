@@ -136,9 +136,10 @@ function applyFilters(data) {
     // 광고유형 필터
     if (adType !== "all") {
       const name = (c.name || "").toLowerCase();
-      if (adType === "shopping" && !name.includes("쇼핑")) return false;
-      if (adType === "powerlink" && !name.includes("파워링크") && !name.includes("powerlink")) return false;
-      if (adType === "adboost" && !name.includes("애드부스트") && !name.includes("adboost")) return false;
+      const tp = String(c.type || "");
+      if (adType === "shopping" && tp !== "2" && !name.includes("쇼핑")) return false;
+      if (adType === "powerlink" && tp !== "1" && !name.includes("파워링크") && !name.includes("powerlink")) return false;
+      if (adType === "adboost" && !name.includes("애드부스트") && !name.includes("adboost") && c.account !== "DA") return false;
     }
     return true;
   });
@@ -228,6 +229,7 @@ function renderKPI() {
     if (el) { const v = el.querySelector(".kpi-value"); if (v) v.textContent = value; }
   };
 
+  setKpi("kpiCost", cost ? fmtWon(cost) : "-");
   setKpi("kpiImpressions", imps ? fmt(imps) : "-");
   setKpi("kpiClicks", clicks ? fmt(clicks) : "-");
   setKpi("kpiCtr", ctr);
@@ -427,9 +429,12 @@ function renderTable() {
     let media = c.account === "SA" ? "네이버SA" : c.account === "DA" ? "네이버DA" : (c.account || "기타");
 
     let adType = "-";
-    if (name.includes("쇼핑")) adType = "쇼핑검색";
-    else if (name.includes("파워링크") || name.includes("powerlink")) adType = "파워링크";
+    if (c.type === "2" || c.type === 2 || name.includes("쇼핑")) adType = "쇼핑검색";
+    else if (c.type === "1" || c.type === 1 || name.includes("파워링크") || name.includes("powerlink")) adType = "파워링크";
+    else if (c.type === "4" || c.type === 4) adType = "파워콘텐츠";
+    else if (c.type === "7" || c.type === 7) adType = "브랜드검색";
     else if (name.includes("애드부스트") || name.includes("adboost")) adType = "애드부스트";
+    else if (c.account === "DA") adType = "애드부스트";
 
     return {
       ...c, brand, media, adType,
@@ -1009,7 +1014,7 @@ async function loadSAData() {
     if (!res.ok) throw new Error("서버 연결 실패");
     const data = await res.json();
     saData = data.map((c) => ({
-      id: c.id, name: c.name, impressions: c.impressions,
+      id: c.id, name: c.name, type: c.type || "", impressions: c.impressions,
       clicks: c.clicks, cost: c.cost,
       purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
       cartCount: c.cartCount || 0, account: "SA",
