@@ -579,18 +579,21 @@ function renderTable() {
 function buildDailyHtml(dailyData) {
   let html = `<table class="daily-table">
     <thead><tr>
-      <th>날짜</th><th class="num">광고비</th><th class="num">노출</th><th class="num">클릭</th>
-      <th class="num">장바구니</th><th class="num">구매</th><th class="num">구매액</th><th class="num">구매ROAS</th>
+      <th>날짜</th><th class="num">노출</th><th class="num">클릭</th><th class="num">CTR</th>
+      <th class="num">장바구니</th><th class="num">구매</th>
+      <th class="num">광고비</th><th class="num">구매액(광고매출)</th><th class="num">ROAS</th>
     </tr></thead><tbody>`;
   dailyData.forEach((d) => {
-    const roas = (d.cost != null && d.cost > 0 && d.purchaseAmount) ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
     const costStr = d.cost === null || d.cost === undefined ? "-" : fmtWon(d.cost);
     const impStr = d.impressions === null || d.impressions === undefined ? "-" : fmt(d.impressions);
     const clkStr = d.clicks === null || d.clicks === undefined ? "-" : fmt(d.clicks);
+    const ctr = d.impressions && d.clicks ? ((d.clicks / d.impressions) * 100).toFixed(2) + "%" : "-";
+    const roas = (d.cost != null && d.cost > 0 && d.purchaseAmount) ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
     html += `<tr>
-      <td>${d.date}</td><td class="num">${costStr}</td><td class="num">${impStr}</td><td class="num">${clkStr}</td>
+      <td>${d.date}</td>
+      <td class="num">${impStr}</td><td class="num">${clkStr}</td><td class="num">${ctr}</td>
       <td class="num">${fmt(d.cartCount || 0)}</td><td class="num">${fmt(d.purchaseCount || 0)}</td>
-      <td class="num">${fmtWon(d.purchaseAmount || 0)}</td><td class="num">${roas}</td>
+      <td class="num">${costStr}</td><td class="num">${fmtWon(d.purchaseAmount || 0)}</td><td class="num">${roas}</td>
     </tr>`;
   });
   html += "</tbody></table>";
