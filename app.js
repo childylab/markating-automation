@@ -6,7 +6,7 @@ let daRawData = [];
 
 // === 상태 ===
 let currentChannel = "SA";
-let currentPeriod = "7ex";
+let currentPeriod = "7d";
 
 // === 유틸 ===
 function fmt(n) {
@@ -26,15 +26,14 @@ function getDateRange() {
   const today = new Date();
   let start, end;
   switch (currentPeriod) {
-    case "7": end = new Date(today); start = new Date(today); start.setDate(start.getDate() - 6); break;
-    case "7ex": end = new Date(today); end.setDate(end.getDate() - 1); start = new Date(end); start.setDate(start.getDate() - 6); break;
-    case "30": end = new Date(today); start = new Date(today); start.setDate(start.getDate() - 29); break;
-    case "30ex": end = new Date(today); end.setDate(end.getDate() - 1); start = new Date(end); start.setDate(start.getDate() - 29); break;
+    case "7d": end = new Date(today); end.setDate(end.getDate() - 1); start = new Date(end); start.setDate(start.getDate() - 6); break;
+    case "30d": end = new Date(today); end.setDate(end.getDate() - 1); start = new Date(end); start.setDate(start.getDate() - 29); break;
+    case "thisMonth": start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today); end.setDate(end.getDate() - 1); break;
     case "custom":
       start = document.getElementById("startDate").value ? new Date(document.getElementById("startDate").value) : new Date(today);
       end = document.getElementById("endDate").value ? new Date(document.getElementById("endDate").value) : new Date(today);
       break;
-    default: end = new Date(today); start = new Date(today); start.setDate(start.getDate() - 29);
+    default: end = new Date(today); end.setDate(end.getDate() - 1); start = new Date(end); start.setDate(start.getDate() - 6);
   }
   return { start, end };
 }
@@ -80,18 +79,24 @@ function renderKPI() {
   const clicks = data.reduce((s, c) => s + c.clicks, 0);
   const purchase = data.reduce((s, c) => s + (c.purchaseCount || 0), 0);
   const revenue = data.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
-  const ctr = imps ? ((clicks / imps) * 100).toFixed(2) + "%" : "-";
   const roas = cost && revenue ? ((revenue / cost) * 100).toFixed(1) + "%" : "-";
-  const cpc = clicks ? "₩" + Math.round(cost / clicks).toLocaleString() : "-";
+  const convRate = clicks && purchase ? ((purchase / clicks) * 100).toFixed(2) + "%" : "-";
 
-  document.getElementById("kpiCost").textContent = fmtWon(cost);
-  document.getElementById("kpiImpressions").textContent = fmt(imps);
-  document.getElementById("kpiClicks").textContent = fmt(clicks);
-  document.getElementById("kpiCtr").textContent = ctr;
-  document.getElementById("kpiPurchase").textContent = fmt(purchase) + "건";
-  document.getElementById("kpiRevenue").textContent = fmtWon(revenue);
-  document.getElementById("kpiRoas").textContent = roas;
-  document.getElementById("kpiCpc").textContent = cpc;
+  // 새 KPI 카드 ID에 맞춰서 값 설정
+  const setKpi = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const valEl = el.querySelector(".kpi-value");
+      if (valEl) valEl.textContent = value;
+    }
+  };
+
+  setKpi("kpiRoi", "-"); // 실제 ROI는 수수료/원가 반영 후 (미구현)
+  setKpi("kpiRoas", roas);
+  setKpi("kpiCost", fmtWon(cost));
+  setKpi("kpiRevenue", fmtWon(revenue));
+  setKpi("kpiPurchase", fmt(purchase) + "건");
+  setKpi("kpiConvRate", convRate);
 }
 
 // === 테이블 렌더 ===
@@ -221,45 +226,20 @@ async function toggleDaily(rowId, campaign) {
 function render() {
   renderKPI();
   renderTable();
-
-  // SA일 때 업로드 버튼 숨기고, DA일 때 표시
-  document.getElementById("btnUploadWrap").classList.toggle("hidden", currentChannel === "SA");
-  // SA일 때 새로고침은 API, DA일 때도 표시 (CSV 재업로드 용도)
 }
 
 // === 이벤트 ===
 
-// 채널 탭 (sidebar nav items)
-document.querySelectorAll(".nav-item[data-channel]").forEach((tab) => {
-  tab.addEventListener("click", (e) => {
-    e.preventDefault();
-    document.querySelectorAll(".nav-item[data-channel]").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    currentChannel = tab.dataset.channel;
-
-    // 페이지 타이틀 업데이트
-    const titleEl = document.getElementById("pageTitle");
-    const subEl = document.getElementById("pageSub");
-    if (currentChannel === "SA") {
-      titleEl.textContent = "SA 검색광고";
-      subEl.textContent = "";
-    } else {
-      titleEl.textContent = "DA 디스플레이";
-      subEl.textContent = "";
-    }
-
-    render();
-  });
-});
-
-// 기간
+// 기간 필터
 document.getElementById("periodSelect").addEventListener("change", (e) => {
   currentPeriod = e.target.value;
-  document.getElementById("customDates").classList.toggle("hidden", currentPeriod !== "custom");
+  const customEl = document.getElementById("customDates");
+  if (customEl) customEl.style.display = currentPeriod === "custom" ? "flex" : "none";
   if (currentPeriod !== "custom") render();
 });
 
-document.getElementById("applyDate").addEventListener("click", render);
+const applyBtn = document.getElementById("applyDate");
+if (applyBtn) applyBtn.addEventListener("click", render);
 
 // === 서버 연동 ===
 const API = "https://n8n.childylab.com/webhook";
@@ -271,15 +251,13 @@ function setStatus(msg, type = "") {
   if (type === "success") setTimeout(() => { el.textContent = ""; el.className = "status-bar"; }, 5000);
 }
 
-// 새로고침 버튼
-document.getElementById("btnRefresh").addEventListener("click", async () => {
-  if (currentChannel === "SA") {
+// 새로고침/데이터 로드 버튼
+const refreshBtn = document.getElementById("btnRefresh");
+if (refreshBtn) {
+  refreshBtn.addEventListener("click", async () => {
     await loadSAData();
-  } else {
-    render();
-    setStatus("DA 기간 필터 적용 완료", "success");
-  }
-});
+  });
+}
 
 async function refreshSA() {
   const btn = document.getElementById("btnRefresh");
@@ -362,30 +340,33 @@ function hideProgress() {
 }
 
 // DA CSV 업로드
-document.getElementById("daFileInput").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+const daInput = document.getElementById("daFileInput");
+if (daInput) {
+  daInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  setStatus("DA CSV 파일 읽는 중...");
-  const reader = new FileReader();
-  reader.onload = (evt) => {
-    try {
-      const parsed = parseNaverDaCsv(evt.target.result);
-      if (parsed.length > 0) {
-        daRawData = parsed;
-        daData = parsed;
-        render();
-        setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
-      } else {
-        setStatus("CSV에서 데이터를 읽지 못했어요", "error");
+    setStatus("DA CSV 파일 읽는 중...");
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const parsed = parseNaverDaCsv(evt.target.result);
+        if (parsed.length > 0) {
+          daRawData = parsed;
+          daData = parsed;
+          render();
+          setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
+        } else {
+          setStatus("CSV에서 데이터를 읽지 못했어요", "error");
+        }
+      } catch (err) {
+        setStatus("CSV 파싱 에러: " + err.message, "error");
       }
-    } catch (err) {
-      setStatus("CSV 파싱 에러: " + err.message, "error");
-    }
-  };
-  reader.readAsText(file, "utf-8");
-  e.target.value = "";
-});
+    };
+    reader.readAsText(file, "utf-8");
+    e.target.value = "";
+  });
+}
 
 function parseNaverDaCsv(text) {
   const lines = text.trim().split("\n");
