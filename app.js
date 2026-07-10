@@ -469,7 +469,7 @@ function renderTable() {
   if (!tbody) return;
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="16" class="load-cell">
+    tbody.innerHTML = `<tr><td colspan="18" class="load-cell">
       <span class="load-hint">필터 조건을 설정하고 [데이터 로드] 버튼을 누르세요</span>
     </td></tr>`;
     return;
@@ -556,6 +556,8 @@ function renderTable() {
       <td class="num ${roasClass}">${purchaseRoas}</td>
       <td class="num">-</td>
       <td class="num">-</td>
+      <td class="num">${c.platformFeeCost > 0 ? fmtWon(Math.round(c.platformFeeCost)) : "-"}</td>
+      <td class="num">${c.logisticsCost > 0 ? fmtWon(Math.round(c.logisticsCost)) : "-"}</td>
       <td class="num">${'<span class="roi-unavailable" title="상품원가(ERP) 미연동으로 ROI 계산 불가">계산 불가</span>'}</td>
     `;
     row.addEventListener("click", () => toggleDaily(rowId, c));
@@ -565,10 +567,10 @@ function renderTable() {
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
     if (c.daily && c.daily.length > 0) {
-      dailyRow.innerHTML = `<td colspan="16" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
+      dailyRow.innerHTML = `<td colspan="18" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
       dailyRow.dataset.loaded = "true";
     } else {
-      dailyRow.innerHTML = `<td colspan="16" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+      dailyRow.innerHTML = `<td colspan="18" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
     }
     tbody.appendChild(dailyRow);
   });
