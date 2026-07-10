@@ -200,30 +200,45 @@ function handleHashChange() {
 function renderKPI() {
   const data = getData();
   const cost = data.reduce((s, c) => s + c.cost, 0);
+  const imps = data.reduce((s, c) => s + c.impressions, 0);
   const clicks = data.reduce((s, c) => s + c.clicks, 0);
+  const cart = data.reduce((s, c) => s + (c.cartCount || 0), 0);
   const purchase = data.reduce((s, c) => s + (c.purchaseCount || 0), 0);
   const revenue = data.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
+  const ctr = imps ? ((clicks / imps) * 100).toFixed(2) + "%" : "-";
   const roas = cost && revenue ? ((revenue / cost) * 100).toFixed(1) + "%" : "-";
   const convRate = clicks && purchase ? ((purchase / clicks) * 100).toFixed(2) + "%" : "-";
+
+  // 비용 계산
+  const logisticsRate = costSettings.logisticsFee / 100;
+  const platformRate = costSettings.platformFee / 100;
+  const logisticsCost = revenue * logisticsRate;
+  const platformFeeCost = revenue * platformRate;
+
+  // ROI = (매출 - 상품원가 - 고정비 - 몰별수수료) / 광고비 × 100
+  // 상품원가는 ERP 연동 전이라 0으로 처리 (카드에는 "-" 표시)
+  let roiValue = "-";
+  if (cost > 0 && revenue > 0 && (logisticsRate > 0 || platformRate > 0)) {
+    const netProfit = revenue - 0 - logisticsCost - platformFeeCost;
+    roiValue = ((netProfit / cost) * 100).toFixed(1) + "%";
+  }
 
   const setKpi = (id, value) => {
     const el = document.getElementById(id);
     if (el) { const v = el.querySelector(".kpi-value"); if (v) v.textContent = value; }
   };
 
-  setKpi("kpiRoas", roas);
-  setKpi("kpiCost", fmtWon(cost));
-  setKpi("kpiRevenue", fmtWon(revenue));
+  setKpi("kpiImpressions", imps ? fmt(imps) : "-");
+  setKpi("kpiClicks", clicks ? fmt(clicks) : "-");
+  setKpi("kpiCtr", ctr);
+  setKpi("kpiCart", cart ? fmt(cart) + "건" : "-");
   setKpi("kpiPurchase", purchase ? fmt(purchase) + "건" : "-");
   setKpi("kpiConvRate", convRate);
-
-  // ROI 계산: (매출 - 수수료비용 - 광고비) / 광고비 × 100
-  const feeRate = getTotalFeeRate();
-  let roiValue = "-";
-  if (feeRate > 0 && cost > 0 && revenue > 0) {
-    const feeCost = revenue * feeRate;
-    roiValue = (((revenue - feeCost - cost) / cost) * 100).toFixed(1) + "%";
-  }
+  setKpi("kpiRevenue", revenue ? fmtWon(revenue) : "-");
+  setKpi("kpiRoas", roas);
+  setKpi("kpiCogs", "-"); // ERP 연동 전
+  setKpi("kpiLogistics", logisticsRate > 0 && revenue ? fmtWon(Math.round(logisticsCost)) : "-");
+  setKpi("kpiPlatformFee", platformRate > 0 && revenue ? fmtWon(Math.round(platformFeeCost)) : "-");
   setKpi("kpiRoi", roiValue);
 }
 
@@ -259,13 +274,14 @@ function renderTrendChart() {
     if (chartMode === "roas") {
       return cost > 0 ? Math.round((revenue / cost) * 100) : 0;
     } else {
-      // ROI = (매출 - 수수료비용 - 광고비) / 광고비 × 100
-      const feeRate = getTotalFeeRate();
-      if (cost > 0 && feeRate > 0) {
-        const feeCost = revenue * feeRate;
-        return Math.round(((revenue - feeCost - cost) / cost) * 100);
+      // ROI = (매출 - 상품원가 - 고정비 - 수수료) / 광고비 × 100
+      const logRate = costSettings.logisticsFee / 100;
+      const platRate = costSettings.platformFee / 100;
+      if (cost > 0) {
+        const net = revenue - (revenue * logRate) - (revenue * platRate);
+        return Math.round((net / cost) * 100);
       }
-      return cost > 0 ? Math.round((revenue / cost) * 100 - 100) : 0;
+      return 0;
     }
   });
   const costs = dates.map(date => dailyMap[date].cost);
