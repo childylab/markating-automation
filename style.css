@@ -183,7 +183,7 @@ table { border-collapse: collapse; width: 100%; }
 .chart-title { font-family: var(--font-heading); font-size: 14px; font-weight: 600; color: var(--color-text); }
 .chart-toggles { display: flex; gap: var(--space-base); }
 .chart-body { position: relative; }
-.chart-body-donut { max-width: 260px; margin: 0 auto; }
+.chart-body-donut { max-width: 180px; margin: 0 auto; }
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION HEADING
