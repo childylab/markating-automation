@@ -166,10 +166,11 @@ function applyFilters(data) {
     // 광고유형 필터
     if (adType !== "all") {
       const name = (c.name || "").toLowerCase();
-      const tp = String(c.type || "");
-      if (adType === "shopping" && tp !== "2" && !name.includes("쇼핑")) return false;
-      if (adType === "powerlink" && tp !== "1" && !name.includes("파워링크") && !name.includes("powerlink")) return false;
+      const tp = String(c.type || "").toUpperCase();
+      if (adType === "shopping" && tp !== "SHOPPING" && tp !== "2" && !name.includes("쇼핑")) return false;
+      if (adType === "powerlink" && tp !== "WEB_SITE" && tp !== "POWER_LINK" && tp !== "1" && !name.includes("파워링크")) return false;
       if (adType === "adboost" && !name.includes("애드부스트") && !name.includes("adboost") && c.account !== "DA") return false;
+      if (adType === "brandsearch" && tp !== "BRAND_SEARCH" && tp !== "7") return false;
     }
     return true;
   });
@@ -486,12 +487,12 @@ function renderTable() {
     let media = c.account === "SA" ? "네이버SA" : c.account === "DA" ? "네이버DA" : (c.account || "기타");
 
     let adType = "-";
-    if (c.type === "2" || c.type === 2 || name.includes("쇼핑")) adType = "쇼핑검색";
-    else if (c.type === "1" || c.type === 1 || name.includes("파워링크") || name.includes("powerlink")) adType = "파워링크";
-    else if (c.type === "4" || c.type === 4) adType = "파워콘텐츠";
-    else if (c.type === "7" || c.type === 7) adType = "브랜드검색";
-    else if (name.includes("애드부스트") || name.includes("adboost")) adType = "애드부스트";
-    else if (c.account === "DA") adType = "애드부스트";
+    const tp = String(c.type || "").toUpperCase();
+    if (tp === "SHOPPING" || tp === "2" || name.includes("쇼핑")) adType = "쇼핑검색";
+    else if (tp === "WEB_SITE" || tp === "POWER_LINK" || tp === "1" || name.includes("파워링크") || name.includes("powerlink")) adType = "파워링크";
+    else if (tp === "POWER_CONTENTS" || tp === "4") adType = "파워콘텐츠";
+    else if (tp === "BRAND_SEARCH" || tp === "7") adType = "브랜드검색";
+    else if (name.includes("애드부스트") || name.includes("adboost") || c.account === "DA") adType = "애드부스트";
 
     const platRate = getPlatformFeeForBrand(brand);
     const logRate = costSettings.logisticsFee / 100;
@@ -1139,9 +1140,9 @@ function updateAdTypeOptions() {
 
   let options = '<option value="all">광고유형: 전체</option>';
   if (media === "all") {
-    options += '<option value="shopping">쇼핑검색</option><option value="powerlink">파워링크</option><option value="adboost">애드부스트</option>';
+    options += '<option value="shopping">쇼핑검색</option><option value="powerlink">파워링크</option><option value="brandsearch">브랜드검색</option><option value="adboost">애드부스트</option>';
   } else if (media === "naver_sa") {
-    options += '<option value="shopping">쇼핑검색</option><option value="powerlink">파워링크</option>';
+    options += '<option value="shopping">쇼핑검색</option><option value="powerlink">파워링크</option><option value="brandsearch">브랜드검색</option>';
   } else if (media === "naver_da") {
     options += '<option value="adboost">애드부스트</option>';
   }
