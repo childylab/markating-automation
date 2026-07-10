@@ -465,11 +465,8 @@ function renderTable() {
 
   if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="16" class="load-cell">
-      <button class="btn-load" id="btnLoadData">데이터 로드</button>
-      <span class="load-hint">필터 조건을 설정하고 [조회] 버튼을 누르세요</span>
+      <span class="load-hint">필터 조건을 설정하고 [데이터 로드] 버튼을 누르세요</span>
     </td></tr>`;
-    const loadBtn = document.getElementById("btnLoadData");
-    if (loadBtn) loadBtn.addEventListener("click", loadSAData);
     return;
   }
 
