@@ -148,7 +148,8 @@ function applyFilters(data) {
 // ROUTER
 // ═══════════════════════════════════════════════════════════════
 const PAGE_TITLES = {
-  "dashboard": "메인 대시보드",
+  "dashboard": "광고 성과",
+  "sns": "SNS 성과",
   "brand-analysis": "브랜드/매체 분석",
   "roi-analysis": "ROI 분석",
   "data-management": "데이터 관리",
@@ -175,6 +176,7 @@ function navigateTo(page, subPage) {
 function renderPageContent() {
   switch (currentPage) {
     case "dashboard": render(); break;
+    case "sns": renderSns(); break;
     case "brand-analysis": renderBrandAnalysis(); break;
     case "roi-analysis": renderRoiAnalysis(); break;
     case "data-management": renderDataManagement(); break;
@@ -554,6 +556,125 @@ function renderCampaignDetailTable(data) {
   });
   html += "</tbody></table></div>";
   return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: SNS 성과 (인스타그램 / 쓰레드)
+// ═══════════════════════════════════════════════════════════════
+let snsData = { instagram: null, threads: null };
+
+function renderSns() {
+  const body = document.getElementById("snsBody");
+  if (!body) return;
+  const sub = currentSubPage || "instagram";
+  updateSubNav("snsSubNav", sub);
+
+  if (sub === "instagram") {
+    renderSnsInstagram(body);
+  } else if (sub === "threads") {
+    renderSnsThreads(body);
+  }
+}
+
+function renderSnsInstagram(body) {
+  const data = snsData.instagram;
+  if (!data) {
+    body.innerHTML = `
+      <div class="sns-kpi-grid">
+        <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">프로필 방문</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">링크 클릭</span><span class="kpi-value">—</span></div>
+      </div>
+      <div class="sns-connect-card">
+        <div class="info-card">
+          <div class="info-card-icon">📸</div>
+          <div class="info-card-content">
+            <h4 class="info-card-title">인스타그램 연동</h4>
+            <p class="info-card-desc">Meta Graph API를 통해 인스타그램 비즈니스 계정의 인사이트를 가져옵니다.</p>
+            <ul class="info-list">
+              <li>팔로워 수 및 증감 추이</li>
+              <li>게시물별 도달/노출/인게이지먼트</li>
+              <li>스토리 조회수, 프로필 방문, 링크 클릭</li>
+              <li>기간별 인게이지먼트율 추이</li>
+            </ul>
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary btn-sm" id="btnConnectInstagram">인스타그램 연동 설정</button>
+            </div>
+            <p class="info-card-desc" style="margin-top:12px; color: var(--color-text-muted);">설정 > API 연동에서 Meta Graph API 토큰을 등록해주세요.</p>
+          </div>
+        </div>
+      </div>`;
+    const btnConnect = document.getElementById("btnConnectInstagram");
+    if (btnConnect) btnConnect.addEventListener("click", () => { window.location.hash = "#settings/api"; });
+    return;
+  }
+  // 데이터가 있을 때 렌더 (향후 구현)
+  renderSnsDataView(body, data, "instagram");
+}
+
+function renderSnsThreads(body) {
+  const data = snsData.threads;
+  if (!data) {
+    body.innerHTML = `
+      <div class="sns-kpi-grid">
+        <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">좋아요</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">리포스트</span><span class="kpi-value">—</span></div>
+      </div>
+      <div class="sns-connect-card">
+        <div class="info-card">
+          <div class="info-card-icon">🧵</div>
+          <div class="info-card-content">
+            <h4 class="info-card-title">쓰레드 연동</h4>
+            <p class="info-card-desc">Threads API를 통해 쓰레드 계정의 인사이트를 가져옵니다.</p>
+            <ul class="info-list">
+              <li>팔로워 수 및 증감</li>
+              <li>게시물별 조회수/좋아요/답글/리포스트/인용</li>
+              <li>기간별 도달/인게이지먼트 추이</li>
+            </ul>
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary btn-sm" id="btnConnectThreads">쓰레드 연동 설정</button>
+            </div>
+            <p class="info-card-desc" style="margin-top:12px; color: var(--color-text-muted);">설정 > API 연동에서 Threads API 토큰을 등록해주세요.</p>
+          </div>
+        </div>
+      </div>`;
+    const btnConnect = document.getElementById("btnConnectThreads");
+    if (btnConnect) btnConnect.addEventListener("click", () => { window.location.hash = "#settings/api"; });
+    return;
+  }
+  renderSnsDataView(body, data, "threads");
+}
+
+function renderSnsDataView(body, data, platform) {
+  // 데이터가 있을 때의 풀 뷰 (향후 API 연동 시 활성화)
+  const metrics = data.metrics || {};
+  const posts = data.posts || [];
+
+  let kpiHtml = `<div class="sns-kpi-grid">
+    <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${fmt(metrics.followers || 0)}</span></div>
+    <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">${fmt(metrics.reach || 0)}</span></div>
+    <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">${metrics.engagementRate ? metrics.engagementRate.toFixed(2) + "%" : "-"}</span></div>
+    <div class="kpi-card"><span class="kpi-label">${platform === "threads" ? "리포스트" : "프로필 방문"}</span><span class="kpi-value">${fmt(metrics.profileVisits || metrics.reposts || 0)}</span></div>
+    <div class="kpi-card"><span class="kpi-label">${platform === "threads" ? "좋아요" : "링크 클릭"}</span><span class="kpi-value">${fmt(metrics.linkClicks || metrics.likes || 0)}</span></div>
+  </div>`;
+
+  let tableHtml = "";
+  if (posts.length > 0) {
+    const cols = platform === "threads"
+      ? ["게시일", "내용", "조회", "좋아요", "답글", "리포스트", "인용"]
+      : ["게시일", "유형", "도달", "노출", "좋아요", "댓글", "저장", "공유"];
+    tableHtml = `<div class="table-wrap" style="margin-top:24px;"><table class="data-table">
+      <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
+      <tbody>${posts.map(p => `<tr>${Object.values(p).map(v => `<td class="num">${v}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table></div>`;
+  }
+
+  body.innerHTML = kpiHtml + tableHtml;
 }
 
 // ═══════════════════════════════════════════════════════════════
