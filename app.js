@@ -563,31 +563,26 @@ function renderTable() {
     row.addEventListener("click", () => toggleDaily(rowId, c));
     tbody.appendChild(row);
 
-    const dailyRow = document.createElement("tr");
-    dailyRow.id = rowId;
-    dailyRow.className = "daily-row hidden";
+    // 일별 데이터 행들을 위한 컨테이너 (hidden 상태)
     if (c.daily && c.daily.length > 0) {
-      dailyRow.innerHTML = `<td colspan="18" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
-      dailyRow.dataset.loaded = "true";
-    } else {
-      dailyRow.innerHTML = `<td colspan="18" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+      const dailyHtml = buildDailyHtml(c.daily);
+      const temp = document.createElement("tbody");
+      temp.innerHTML = dailyHtml;
+      const dailyRows = Array.from(temp.querySelectorAll("tr"));
+      dailyRows.forEach(dr => {
+        dr.classList.add("daily-detail-row", "hidden");
+        dr.dataset.parent = rowId;
+        tbody.appendChild(dr);
+      });
     }
-    tbody.appendChild(dailyRow);
   });
 }
 
 function buildDailyHtml(dailyData) {
-  // 상위 테이블 컬럼과 세로 정렬 맞춤
-  // 상위: [토글][브랜드][매체][광고유형][캠페인] | 노출 | 클릭 | CTR | 장바구니 | 구매 | 광고비 | 구매액(광고매출) | ROAS | 전체매출 | 광고매출비중 | 몰수수료 | 고정비 | ROI
+  // 서브테이블 없이, 메인 테이블에 직접 삽입할 행 HTML 반환
+  // 상위 컬럼: [토글][브랜드][매체][광고유형][캠페인] | 노출 | 클릭 | CTR | 장바구니 | 구매 | 광고비 | 구매액 | ROAS | 전체매출 | 광고매출비중 | 몰수수료 | 고정비 | ROI
   const logRate = costSettings.logisticsFee / 100;
-
-  let html = `<table class="daily-table">
-    <thead><tr>
-      <th>날짜</th><th class="num">노출</th><th class="num">클릭</th><th class="num">CTR</th>
-      <th class="num">장바구니</th><th class="num">구매</th><th class="num">광고비</th>
-      <th class="num">구매액(광고매출)</th><th class="num">ROAS</th><th class="num">전체매출</th>
-      <th class="num">광고매출비중</th><th class="num">몰수수료</th><th class="num">고정비</th><th class="num">ROI</th>
-    </tr></thead><tbody>`;
+  let html = "";
   dailyData.forEach((d) => {
     const costStr = d.cost === null || d.cost === undefined ? "-" : fmtWon(d.cost);
     const impStr = d.impressions === null || d.impressions === undefined ? "-" : fmt(d.impressions);
@@ -597,9 +592,8 @@ function buildDailyHtml(dailyData) {
     const rev = d.purchaseAmount || 0;
     const logistics = rev * logRate;
     const logStr = logistics > 0 ? fmtWon(Math.round(logistics)) : "-";
-    // 몰수수료는 브랜드별이라 일별에서는 상위 캠페인 기준으로 계산 어려움 → 일단 '-'
-    html += `<tr>
-      <td>${d.date}</td>
+    html += `<tr class="daily-detail-row">
+      <td></td><td colspan="3"></td><td class="daily-date">${d.date}</td>
       <td class="num">${impStr}</td><td class="num">${clkStr}</td><td class="num">${ctr}</td>
       <td class="num">${fmt(d.cartCount || 0)}</td><td class="num">${fmt(d.purchaseCount || 0)}</td>
       <td class="num">${costStr}</td><td class="num">${fmtWon(rev)}</td><td class="num">${roas}</td>
@@ -608,30 +602,21 @@ function buildDailyHtml(dailyData) {
       <td class="num"><span class="roi-unavailable" title="상품원가 미연동">계산 불가</span></td>
     </tr>`;
   });
-  html += "</tbody></table>";
   return html;
 }
 
 async function toggleDaily(rowId, campaign) {
-  const row = document.getElementById(rowId);
   const icon = document.getElementById("icon-" + rowId);
-  if (!row) return;
-  if (!row.classList.contains("hidden")) {
-    row.classList.add("hidden");
-    if (icon) icon.classList.remove("open");
+  const rows = document.querySelectorAll(`[data-parent="${rowId}"]`);
+
+  if (rows.length === 0) {
+    // 일별 데이터 없음
     return;
   }
-  row.classList.remove("hidden");
-  if (icon) icon.classList.add("open");
-  if (row.dataset.loaded === "true") return;
-  if (campaign.daily && campaign.daily.length > 0) {
-    const cell = row.querySelector(".daily-cell");
-    if (cell) cell.innerHTML = buildDailyHtml(campaign.daily);
-  } else {
-    const cell = row.querySelector(".daily-cell");
-    if (cell) cell.innerHTML = '<div class="daily-loading">일별 데이터 없음</div>';
-  }
-  row.dataset.loaded = "true";
+
+  const isHidden = rows[0].classList.contains("hidden");
+  rows.forEach(r => r.classList.toggle("hidden", !isHidden));
+  if (icon) icon.classList.toggle("open", isHidden);
 }
 
 function render() {
