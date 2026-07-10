@@ -290,12 +290,13 @@ function renderKPI() {
   setKpi("kpiConvRate", convRate);
   setKpi("kpiRevenue", revenue ? fmtWon(revenue) : "-");
   setKpi("kpiRoas", roas);
-  setKpi("kpiNaturalRevenue", "-"); // 자연 매출: 몰 API 연동 전 (향후 추가)
-  setKpi("kpiAdRevenue", revenue ? fmtWon(revenue) : "-"); // 광고 매출 = 현재 구매전환액
-  setKpi("kpiAdRevenueRatio", "-"); // 전체 매출 미연동 → 비중 계산 불가
+  setKpi("kpiTotalRevenue", "-"); // 전체 매출: 몰 API 연동 전
+  setKpi("kpiAdRevenue", revenue ? fmtWon(revenue) : "-");
+  setKpi("kpiAdRevenueRatio", "-"); // 전체 매출 미연동
   setKpi("kpiCogs", "-"); // ERP 연동 전
   setKpi("kpiLogistics", revenue ? fmtWon(Math.round(totalLogistics)) : "-");
   setKpi("kpiPlatformFee", totalPlatformFee > 0 ? fmtWon(Math.round(totalPlatformFee)) : "-");
+  setKpi("kpiMallFee", totalPlatformFee > 0 ? fmtWon(Math.round(totalPlatformFee)) : "-");
 
   if (roiUnavailable && revenue > 0) {
     setKpiError("kpiRoi", "계산 불가", "상품원가(ERP) 미연동으로 ROI 계산 불가");
@@ -468,7 +469,7 @@ function renderTable() {
   if (!tbody) return;
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="16" class="load-cell">
+    tbody.innerHTML = `<tr><td colspan="19" class="load-cell">
       <span class="load-hint">필터 조건을 설정하고 [데이터 로드] 버튼을 누르세요</span>
     </td></tr>`;
     return;
@@ -553,6 +554,9 @@ function renderTable() {
       <td class="num">${fmt(c.purchaseCount || 0)}</td>
       <td class="num">${fmtWon(c.purchaseAmount || 0)}</td>
       <td class="num ${roasClass}">${purchaseRoas}</td>
+      <td class="num">-</td>
+      <td class="num">${fmtWon(c.purchaseAmount || 0)}</td>
+      <td class="num">-</td>
       <td class="num">${logStr}</td>
       <td class="num">${platStr}</td>
       <td class="num">${roiStr}</td>
@@ -564,10 +568,10 @@ function renderTable() {
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
     if (c.daily && c.daily.length > 0) {
-      dailyRow.innerHTML = `<td colspan="16" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
+      dailyRow.innerHTML = `<td colspan="19" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
       dailyRow.dataset.loaded = "true";
     } else {
-      dailyRow.innerHTML = `<td colspan="16" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+      dailyRow.innerHTML = `<td colspan="19" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
     }
     tbody.appendChild(dailyRow);
   });

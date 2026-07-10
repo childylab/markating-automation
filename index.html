@@ -82,23 +82,28 @@
         </div>
       </section>
 
-      <!-- KPI Cards -->
-      <section class="kpi-grid kpi-grid-12">
-        <div class="kpi-card" id="kpiCost"><span class="kpi-label">광고 집행액</span><span class="kpi-value">—</span></div>
+      <!-- KPI Cards - 3줄 구성 -->
+      <section class="kpi-grid kpi-grid-7">
         <div class="kpi-card" id="kpiImpressions"><span class="kpi-label">노출 수</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiClicks"><span class="kpi-label">클릭 수</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiCtr"><span class="kpi-label">CTR</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiCart"><span class="kpi-label">장바구니</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiPurchase"><span class="kpi-label">구매 수</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiConvRate"><span class="kpi-label">구매전환율</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card" id="kpiRevenue"><span class="kpi-label">구매전환액(매출)</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card" id="kpiPlatformFee"><span class="kpi-label">몰수수료</span><span class="kpi-value">—</span></div>
+      </section>
+      <section class="kpi-grid kpi-grid-6">
+        <div class="kpi-card" id="kpiCost"><span class="kpi-label">총 광고집행액</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card" id="kpiRevenue"><span class="kpi-label">구매전환액</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiRoas"><span class="kpi-label">ROAS</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card" id="kpiNaturalRevenue"><span class="kpi-label">자연 매출</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card" id="kpiTotalRevenue"><span class="kpi-label">전체 매출</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiAdRevenue"><span class="kpi-label">광고 매출</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiAdRevenueRatio"><span class="kpi-label">광고 매출 비중</span><span class="kpi-value">—</span></div>
+      </section>
+      <section class="kpi-grid kpi-grid-4">
         <div class="kpi-card" id="kpiCogs"><span class="kpi-label">상품원가</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiLogistics"><span class="kpi-label">고정비(물류)</span><span class="kpi-value">—</span></div>
-        <div class="kpi-card" id="kpiPlatformFee"><span class="kpi-label">몰별수수료</span><span class="kpi-value">—</span></div>
+        <div class="kpi-card" id="kpiMallFee"><span class="kpi-label">몰수수료(합산)</span><span class="kpi-value">—</span></div>
         <div class="kpi-card" id="kpiRoi"><span class="kpi-label">ROI</span><span class="kpi-value">—</span></div>
       </section>
 
@@ -152,6 +157,9 @@
               <th class="num sortable" data-col="purchaseCount" data-type="num">구매 <span class="sort-arrow"></span></th>
               <th class="num sortable" data-col="purchaseAmount" data-type="num">구매액 <span class="sort-arrow"></span></th>
               <th class="num sortable" data-col="roas" data-type="num">ROAS <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="totalRevenue" data-type="num">전체매출 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="adRevenue" data-type="num">광고매출 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="adRevenueRatio" data-type="num">광고매출비중 <span class="sort-arrow"></span></th>
               <th class="num sortable" data-col="logisticsCost" data-type="num">고정비 <span class="sort-arrow"></span></th>
               <th class="num sortable" data-col="platformFeeCost" data-type="num">수수료 <span class="sort-arrow"></span></th>
               <th class="num sortable" data-col="roi" data-type="num">ROI <span class="sort-arrow"></span></th>
