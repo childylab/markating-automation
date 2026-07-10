@@ -715,16 +715,42 @@ function renderSnsInstagram(body) {
   body.innerHTML = `
     <div class="sns-kpi-grid">
       <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${data ? fmt(data.metrics.followers || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">${data ? fmt(data.metrics.reach || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">${data ? data.metrics.engagementRate.toFixed(2) + "%" : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">프로필 방문</span><span class="kpi-value">${data ? fmt(data.metrics.profileVisits || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">링크 클릭</span><span class="kpi-value">${data ? fmt(data.metrics.linkClicks || 0) : "—"}</span></div>
-    </div>`;
-  if (!data) {
-    body.innerHTML += `<div class="empty-state"><p class="empty-text">인스타그램 데이터가 없습니다. 설정 > API 연동에서 Meta Graph API를 연결해주세요.</p></div>`;
-  } else {
-    renderSnsDataView(body, data, "instagram");
-  }
+      <div class="kpi-card"><span class="kpi-label">팔로워 증감</span><span class="kpi-value">${data ? (data.metrics.followerChange > 0 ? "+" : "") + fmt(data.metrics.followerChange || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">도달</span><span class="kpi-value">${data ? fmt(data.metrics.reach || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">프로필 방문</span><span class="kpi-value">${data ? fmt(data.metrics.profileViews || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">웹사이트 클릭</span><span class="kpi-value">${data ? fmt(data.metrics.websiteClicks || 0) : "—"}</span></div>
+    </div>
+
+    <div class="section-heading" style="padding:0 0 var(--space-2);"><h2 class="section-title">피드/릴스 게시물 성과</h2></div>
+    <div class="table-wrap" style="padding:0 0 var(--space-6);">
+      <table class="data-table" id="instaFeedTable">
+        <thead><tr>
+          <th>게시일</th><th>유형</th><th>캡션</th>
+          <th class="num">좋아요</th><th class="num">댓글</th><th class="num">저장</th>
+          <th class="num">공유</th><th class="num">도달</th><th class="num">조회수</th>
+        </tr></thead>
+        <tbody>${data && data.feedPosts ? data.feedPosts.map(p => `<tr>
+          <td>${p.timestamp || "-"}</td><td>${p.mediaType || "-"}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${p.caption || "-"}</td>
+          <td class="num">${fmt(p.likes || 0)}</td><td class="num">${fmt(p.comments || 0)}</td><td class="num">${fmt(p.saved || 0)}</td>
+          <td class="num">${fmt(p.shares || 0)}</td><td class="num">${fmt(p.reach || 0)}</td><td class="num">${fmt(p.views || 0)}</td>
+        </tr>`).join("") : `<tr><td colspan="9" class="load-cell"><span class="load-hint">데이터 없음 — 설정 > API 연동에서 인스타그램을 연결해주세요</span></td></tr>`}</tbody>
+      </table>
+    </div>
+
+    <div class="section-heading" style="padding:0 0 var(--space-2);"><h2 class="section-title">스토리 성과</h2></div>
+    <div class="table-wrap" style="padding:0;">
+      <table class="data-table" id="instaStoryTable">
+        <thead><tr>
+          <th>게시일</th><th class="num">도달</th><th class="num">조회수</th><th class="num">답장</th><th class="num">탐색(Navigation)</th>
+        </tr></thead>
+        <tbody>${data && data.stories ? data.stories.map(s => `<tr>
+          <td>${s.timestamp || "-"}</td>
+          <td class="num">${fmt(s.reach || 0)}</td><td class="num">${fmt(s.views || 0)}</td>
+          <td class="num">${fmt(s.replies || 0)}</td><td class="num">${fmt(s.navigation || 0)}</td>
+        </tr>`).join("") : `<tr><td colspan="5" class="load-cell"><span class="load-hint">데이터 없음</span></td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 function renderSnsThreads(body) {
@@ -894,13 +920,85 @@ function renderSettings() {
   const sub = currentSubPage || "api";
   updateSubNav("settingsSubNav", sub);
   if (sub === "api") {
-    body.innerHTML = `<div class="settings-section">
+    body.innerHTML = `<div class="settings-section" style="max-width:720px;">
       <h4 class="section-title" style="margin-bottom:16px;">API 연동 설정</h4>
-      <div class="settings-card"><div class="settings-card-header"><span class="settings-card-icon">🔗</span><div><strong>n8n Webhook</strong><p class="settings-card-desc">네이버SA 데이터 수집</p></div><span class="status-badge ok">연결됨</span></div>
-        <div class="settings-card-body"><label class="settings-label">Webhook URL</label><div class="settings-url-row"><input type="text" class="settings-input" value="https://n8n.childylab.com/webhook" readonly><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('https://n8n.childylab.com/webhook')">복사</button></div><p class="settings-hint">SA 캠페인 데이터를 가져오는 엔드포인트입니다.</p></div></div>
-      <div class="settings-card"><div class="settings-card-header"><span class="settings-card-icon">🛒</span><div><strong>자사몰 연동</strong><p class="settings-card-desc">주문/매출 데이터</p></div><span class="status-badge warn">미설정</span></div>
-        <div class="settings-card-body"><p class="settings-hint">자사몰 API를 연동하면 상품별 원가 기반 ROI 계산이 가능합니다. (ERP 연동 필요)</p></div></div>
+
+      <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">🔗</span><div><strong>n8n Webhook</strong><p class="settings-card-desc">네이버SA 데이터 수집</p></div><span class="status-badge ok">연결됨</span></div>
+        <div class="settings-card-body"><label class="settings-label">Webhook URL</label><div class="settings-url-row"><input type="text" class="settings-input" value="https://n8n.childylab.com/webhook" readonly><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('https://n8n.childylab.com/webhook')">복사</button></div></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">📸</span><div><strong>인스타그램 (Meta Graph API)</strong><p class="settings-card-desc">비즈니스 계정 인사이트 수집</p></div><span class="status-badge warn">미연동</span></div>
+        <div class="settings-card-body">
+          <div class="settings-field">
+            <label class="settings-label">Instagram Business Account ID</label>
+            <input type="text" class="settings-input" id="inputInstaAccountId" value="${costSettings.instagram?.accountId || ''}" placeholder="예: 17841430549922918">
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">Meta App Access Token (Long-lived)</label>
+            <input type="password" class="settings-input" id="inputInstaToken" value="${costSettings.instagram?.token || ''}" placeholder="Meta Developer에서 발급">
+          </div>
+          <div class="settings-field" style="margin-top:12px;">
+            <p class="settings-hint"><strong>필요 권한:</strong> business_management, instagram_basic, instagram_manage_insights, pages_read_engagement</p>
+          </div>
+          <div class="settings-field" style="margin-top:8px;">
+            <p class="settings-hint"><strong>수집 가능 지표:</strong></p>
+            <p class="settings-hint">• 계정: 팔로워 증감, 프로필 방문, 도달, 웹사이트 클릭</p>
+            <p class="settings-hint">• 피드/릴스: 좋아요, 댓글, 저장, 공유, 도달, 조회수</p>
+            <p class="settings-hint">• 스토리: 도달, 조회수, 답장, 탐색</p>
+            <p class="settings-hint" style="color:var(--color-error);">• 노출 수(Impressions): API v25.0에서 조회 불가 ❌</p>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary btn-sm" id="btnSaveInsta">저장</button>
+            <span id="instaSaveStatus" style="font-size:12px; color:var(--color-success); margin-left:8px;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">🧵</span><div><strong>쓰레드 (Threads API)</strong><p class="settings-card-desc">쓰레드 계정 인사이트 수집</p></div><span class="status-badge warn">미연동</span></div>
+        <div class="settings-card-body">
+          <div class="settings-field">
+            <label class="settings-label">Threads User ID</label>
+            <input type="text" class="settings-input" id="inputThreadsUserId" value="${costSettings.threads?.userId || ''}" placeholder="Threads 사용자 ID">
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">Threads Access Token</label>
+            <input type="password" class="settings-input" id="inputThreadsToken" value="${costSettings.threads?.token || ''}" placeholder="Threads API 토큰">
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary btn-sm" id="btnSaveThreads">저장</button>
+            <span id="threadsSaveStatus" style="font-size:12px; color:var(--color-success); margin-left:8px;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">🛒</span><div><strong>자사몰 / ERP</strong><p class="settings-card-desc">주문/원가 데이터</p></div><span class="status-badge warn">미설정</span></div>
+        <div class="settings-card-body"><p class="settings-hint">자사몰 API + ERP를 연동하면 상품별 원가 기반 ROI 계산이 가능합니다.</p></div>
+      </div>
     </div>`;
+    setTimeout(() => {
+      const btnInsta = document.getElementById("btnSaveInsta");
+      if (btnInsta) btnInsta.addEventListener("click", () => {
+        if (!costSettings.instagram) costSettings.instagram = {};
+        costSettings.instagram.accountId = document.getElementById("inputInstaAccountId")?.value || "";
+        costSettings.instagram.token = document.getElementById("inputInstaToken")?.value || "";
+        saveCostSettings();
+        const st = document.getElementById("instaSaveStatus");
+        if (st) { st.textContent = "✓ 저장됨"; setTimeout(() => st.textContent = "", 3000); }
+      });
+      const btnThreads = document.getElementById("btnSaveThreads");
+      if (btnThreads) btnThreads.addEventListener("click", () => {
+        if (!costSettings.threads) costSettings.threads = {};
+        costSettings.threads.userId = document.getElementById("inputThreadsUserId")?.value || "";
+        costSettings.threads.token = document.getElementById("inputThreadsToken")?.value || "";
+        saveCostSettings();
+        const st = document.getElementById("threadsSaveStatus");
+        if (st) { st.textContent = "✓ 저장됨"; setTimeout(() => st.textContent = "", 3000); }
+      });
+    }, 0);
   } else if (sub === "cost") {
     const fees = costSettings.platformFees || {};
     const platforms = [
