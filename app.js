@@ -71,14 +71,47 @@ function getFilteredDA() {
 }
 
 function getData() {
-  if (currentChannel === "SA") return saData;
-  return daRawData.length > 0 ? getFilteredDA() : daData;
+  // 모든 소스 합치고 필터 적용
+  const sa = saData || [];
+  const da = daRawData.length > 0 ? getFilteredDA() : (daData || []);
+  let all = [...sa, ...da];
+  return applyFilters(all);
 }
 
 function getAllData() {
-  const sa = saData || [];
-  const da = daRawData.length > 0 ? getFilteredDA() : (daData || []);
-  return [...sa, ...da];
+  return getData();
+}
+
+function applyFilters(data) {
+  const brand = document.getElementById("filterBrand")?.value || "all";
+  const media = document.getElementById("filterMedia")?.value || "all";
+  const adType = document.getElementById("filterAdType")?.value || "all";
+
+  return data.filter(c => {
+    // 브랜드 필터
+    if (brand !== "all") {
+      const name = (c.name || "").toLowerCase();
+      if (brand === "odp" && !name.includes("odp") && !name.includes("오디피")) return false;
+      if (brand === "ordinary" && !name.includes("오디너리") && !name.includes("ordinary")) return false;
+      if (brand === "childy" && !name.includes("차일디") && !name.includes("childy")) return false;
+    }
+    // 매체 필터
+    if (media !== "all") {
+      const acc = (c.account || "").toUpperCase();
+      if (media === "naver_sa" && acc !== "SA") return false;
+      if (media === "naver_da" && acc !== "DA") return false;
+      if (media === "meta" && acc !== "META") return false;
+      if (media === "criteo" && acc !== "CRITEO") return false;
+    }
+    // 광고유형 필터
+    if (adType !== "all") {
+      const name = (c.name || "").toLowerCase();
+      if (adType === "shopping" && !name.includes("쇼핑")) return false;
+      if (adType === "powerlink" && !name.includes("파워링크") && !name.includes("powerlink")) return false;
+      if (adType === "adboost" && !name.includes("애드부스트") && !name.includes("adboost")) return false;
+    }
+    return true;
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -308,18 +341,12 @@ function renderTable() {
   if (!tbody) return;
 
   if (!data.length) {
-    if (currentChannel === "SA") {
-      tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
-        <button class="btn-load" id="btnLoadData">데이터 로드</button>
-        <span class="load-hint">기간을 선택하고 데이터를 불러오세요</span>
-      </td></tr>`;
-      const loadBtn = document.getElementById("btnLoadData");
-      if (loadBtn) loadBtn.addEventListener("click", loadSAData);
-    } else {
-      tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
-        <span class="load-hint">CSV 파일을 업로드해주세요</span>
-      </td></tr>`;
-    }
+    tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
+      <button class="btn-load" id="btnLoadData">데이터 로드</button>
+      <span class="load-hint">필터 조건을 설정하고 [조회] 버튼을 누르세요</span>
+    </td></tr>`;
+    const loadBtn = document.getElementById("btnLoadData");
+    if (loadBtn) loadBtn.addEventListener("click", loadSAData);
     return;
   }
 
@@ -647,6 +674,13 @@ async function loadSAData() {
   const { start, end } = getDateRange();
   const s = start.toISOString().split("T")[0];
   const e = end.toISOString().split("T")[0];
+
+  // 이미 같은 기간 데이터가 있으면 필터만 적용해서 렌더
+  if (saData.length > 0 && saData._loadedStart === s && saData._loadedEnd === e) {
+    render();
+    return;
+  }
+
   showProgress("캠페인 목록 가져오는 중...", 0);
   try {
     const res = await fetch(`${API}/naver-sa-campaigns?start=${s}&end=${e}`);
@@ -665,13 +699,21 @@ async function loadSAData() {
         clicks: d.clicks != null ? d.clicks : null
       })),
     }));
+    saData._loadedStart = s;
+    saData._loadedEnd = e;
     showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
     hideProgress();
     render();
     setStatus(`SA 데이터 로드 완료 — ${saData.length}개 캠페인`, "success");
   } catch (err) {
     hideProgress();
-    setStatus("SA 데이터 로드 실패 — 서버 연결 확인 필요", "error");
+    // 데이터가 이미 있으면 필터만 적용
+    if (saData.length > 0) {
+      render();
+      setStatus("기간 변경 실패 — 기존 데이터로 필터 적용됨", "error");
+    } else {
+      setStatus("SA 데이터 로드 실패 — 서버 연결 확인 필요", "error");
+    }
   }
 }
 
@@ -726,17 +768,21 @@ function parseNaverDaCsv(text) {
 // EVENT LISTENERS & INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", () => {
-  // Period filter
+  // Period filter — custom 날짜 표시/숨김만 처리 (자동 리프레시 안함)
   const periodEl = document.getElementById("periodSelect");
   if (periodEl) periodEl.addEventListener("change", (e) => {
     currentPeriod = e.target.value;
     const customEl = document.getElementById("customDates");
     if (customEl) customEl.style.display = currentPeriod === "custom" ? "flex" : "none";
-    if (currentPeriod !== "custom") render();
   });
 
-  const applyBtn = document.getElementById("applyDate");
-  if (applyBtn) applyBtn.addEventListener("click", render);
+  // "조회" 버튼 — 필터 조건 확정 후 데이터 로드 + 렌더
+  const btnQuery = document.getElementById("btnQuery");
+  if (btnQuery) btnQuery.addEventListener("click", async () => {
+    currentPeriod = document.getElementById("periodSelect")?.value || "7d";
+    // SA 데이터가 없거나 기간이 바뀌었으면 서버에서 새로 로드
+    await loadSAData();
+  });
 
   // DA file input
   const daInput = document.getElementById("daFileInput");
