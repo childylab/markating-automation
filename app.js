@@ -720,42 +720,30 @@ function renderSnsInstagram(body) {
   body.innerHTML = `
     <div class="sns-kpi-grid">
       <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${data ? fmt(data.metrics.followers || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">팔로워 증감</span><span class="kpi-value">${data ? (data.metrics.followerChange > 0 ? "+" : "") + fmt(data.metrics.followerChange || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">도달</span><span class="kpi-value">${data ? fmt(data.metrics.reach || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">프로필 방문</span><span class="kpi-value">${data ? fmt(data.metrics.profileViews || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">웹사이트 클릭</span><span class="kpi-value">${data ? fmt(data.metrics.websiteClicks || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">좋아요</span><span class="kpi-value">${data ? fmt(data.metrics.likes || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">댓글</span><span class="kpi-value">${data ? fmt(data.metrics.comments || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">조회수</span><span class="kpi-value">${data ? fmt(data.metrics.views || 0) : "—"}</span></div>
     </div>
-
+    <div class="chart-panel" style="margin-bottom:var(--space-6);">
+      <div class="chart-header"><h3 class="chart-title">일별 추이</h3></div>
+      <div class="chart-body"><canvas id="instaChart" height="200"></canvas></div>
+    </div>
     <div class="section-heading" style="padding:0 0 var(--space-2);"><h2 class="section-title">피드/릴스 게시물 성과</h2></div>
-    <div class="table-wrap" style="padding:0 0 var(--space-6);">
+    <div class="table-wrap" style="padding:0;">
       <table class="data-table" id="instaFeedTable">
         <thead><tr>
           <th>게시일</th><th>유형</th><th>캡션</th>
           <th class="num">좋아요</th><th class="num">댓글</th><th class="num">저장</th>
-          <th class="num">공유</th><th class="num">도달</th><th class="num">조회수</th>
+          <th class="num">공유</th><th class="num">조회수</th>
         </tr></thead>
         <tbody>${data && data.feedPosts ? data.feedPosts.map(p => `<tr>
           <td>${p.timestamp || "-"}</td><td>${p.mediaType || "-"}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${p.caption || "-"}</td>
           <td class="num">${fmt(p.likes || 0)}</td><td class="num">${fmt(p.comments || 0)}</td><td class="num">${fmt(p.saved || 0)}</td>
-          <td class="num">${fmt(p.shares || 0)}</td><td class="num">${fmt(p.reach || 0)}</td><td class="num">${fmt(p.views || 0)}</td>
-        </tr>`).join("") : `<tr><td colspan="9" class="load-cell"><span class="load-hint">데이터 없음 — 설정 > API 연동에서 인스타그램을 연결해주세요</span></td></tr>`}</tbody>
+          <td class="num">${fmt(p.shares || 0)}</td><td class="num">${fmt(p.views || 0)}</td>
+        </tr>`).join("") : `<tr><td colspan="8" class="load-cell"><span class="load-hint">데이터 없음 — 설정 > API 연동에서 인스타그램을 연결해주세요</span></td></tr>`}</tbody>
       </table>
-    </div>
-
-    <div class="section-heading" style="padding:0 0 var(--space-2);"><h2 class="section-title">스토리 성과</h2></div>
-    <div class="table-wrap" style="padding:0;">
-      <table class="data-table" id="instaStoryTable">
-        <thead><tr>
-          <th>게시일</th><th class="num">도달</th><th class="num">조회수</th><th class="num">답장</th><th class="num">탐색(Navigation)</th>
-        </tr></thead>
-        <tbody>${data && data.stories ? data.stories.map(s => `<tr>
-          <td>${s.timestamp || "-"}</td>
-          <td class="num">${fmt(s.reach || 0)}</td><td class="num">${fmt(s.views || 0)}</td>
-          <td class="num">${fmt(s.replies || 0)}</td><td class="num">${fmt(s.navigation || 0)}</td>
-        </tr>`).join("") : `<tr><td colspan="5" class="load-cell"><span class="load-hint">데이터 없음</span></td></tr>`}</tbody>
-      </table>
-    </div>
-  `;
+    </div>`;
+  renderSnsChart("instaChart", data, "instagram");
 }
 
 function renderSnsThreads(body) {
@@ -763,43 +751,82 @@ function renderSnsThreads(body) {
   body.innerHTML = `
     <div class="sns-kpi-grid">
       <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${data ? fmt(data.metrics.followers || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">${data ? fmt(data.metrics.reach || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">${data ? data.metrics.engagementRate.toFixed(2) + "%" : "—"}</span></div>
       <div class="kpi-card"><span class="kpi-label">좋아요</span><span class="kpi-value">${data ? fmt(data.metrics.likes || 0) : "—"}</span></div>
-      <div class="kpi-card"><span class="kpi-label">리포스트</span><span class="kpi-value">${data ? fmt(data.metrics.reposts || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">댓글</span><span class="kpi-value">${data ? fmt(data.metrics.comments || 0) : "—"}</span></div>
+      <div class="kpi-card"><span class="kpi-label">조회수</span><span class="kpi-value">${data ? fmt(data.metrics.views || 0) : "—"}</span></div>
+    </div>
+    <div class="chart-panel" style="margin-bottom:var(--space-6);">
+      <div class="chart-header"><h3 class="chart-title">일별 추이</h3></div>
+      <div class="chart-body"><canvas id="threadsChart" height="200"></canvas></div>
+    </div>
+    <div class="section-heading" style="padding:0 0 var(--space-2);"><h2 class="section-title">게시물별 성과</h2></div>
+    <div class="table-wrap" style="padding:0;">
+      <table class="data-table">
+        <thead><tr>
+          <th>게시일</th><th>내용</th>
+          <th class="num">좋아요</th><th class="num">댓글</th><th class="num">리포스트</th><th class="num">조회수</th>
+        </tr></thead>
+        <tbody>${data && data.posts ? data.posts.map(p => `<tr>
+          <td>${p.timestamp || "-"}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${p.text || "-"}</td>
+          <td class="num">${fmt(p.likes || 0)}</td><td class="num">${fmt(p.comments || 0)}</td>
+          <td class="num">${fmt(p.reposts || 0)}</td><td class="num">${fmt(p.views || 0)}</td>
+        </tr>`).join("") : `<tr><td colspan="6" class="load-cell"><span class="load-hint">데이터 없음 — 설정 > API 연동에서 쓰레드를 연결해주세요</span></td></tr>`}</tbody>
+      </table>
     </div>`;
-  if (!data) {
-    body.innerHTML += `<div class="empty-state"><p class="empty-text">쓰레드 데이터가 없습니다. 설정 > API 연동에서 Threads API를 연결해주세요.</p></div>`;
-  } else {
-    renderSnsDataView(body, data, "threads");
-  }
+  renderSnsChart("threadsChart", data, "threads");
 }
 
 function renderSnsDataView(body, data, platform) {
-  // 데이터가 있을 때의 풀 뷰 (향후 API 연동 시 활성화)
-  const metrics = data.metrics || {};
-  const posts = data.posts || [];
+  // deprecated — replaced by inline rendering
+}
 
-  let kpiHtml = `<div class="sns-kpi-grid">
-    <div class="kpi-card"><span class="kpi-label">팔로워</span><span class="kpi-value">${fmt(metrics.followers || 0)}</span></div>
-    <div class="kpi-card"><span class="kpi-label">도달 (기간)</span><span class="kpi-value">${fmt(metrics.reach || 0)}</span></div>
-    <div class="kpi-card"><span class="kpi-label">인게이지먼트율</span><span class="kpi-value">${metrics.engagementRate ? metrics.engagementRate.toFixed(2) + "%" : "-"}</span></div>
-    <div class="kpi-card"><span class="kpi-label">${platform === "threads" ? "리포스트" : "프로필 방문"}</span><span class="kpi-value">${fmt(metrics.profileVisits || metrics.reposts || 0)}</span></div>
-    <div class="kpi-card"><span class="kpi-label">${platform === "threads" ? "좋아요" : "링크 클릭"}</span><span class="kpi-value">${fmt(metrics.linkClicks || metrics.likes || 0)}</span></div>
-  </div>`;
+let snsChartInstance = null;
+function renderSnsChart(canvasId, data, platform) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
 
-  let tableHtml = "";
-  if (posts.length > 0) {
-    const cols = platform === "threads"
-      ? ["게시일", "내용", "조회", "좋아요", "답글", "리포스트", "인용"]
-      : ["게시일", "유형", "도달", "노출", "좋아요", "댓글", "저장", "공유"];
-    tableHtml = `<div class="table-wrap" style="margin-top:24px;"><table class="data-table">
-      <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
-      <tbody>${posts.map(p => `<tr>${Object.values(p).map(v => `<td class="num">${v}</td>`).join("")}</tr>`).join("")}</tbody>
-    </table></div>`;
+  if (!data || !data.daily || data.daily.length === 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "13px 'DM Sans', sans-serif";
+    ctx.fillStyle = "#9CA3AF";
+    ctx.textAlign = "center";
+    ctx.fillText("데이터 연동 후 일별 추이가 표시됩니다", canvas.width / 2, canvas.height / 2);
+    return;
   }
 
-  body.innerHTML = kpiHtml + tableHtml;
+  const dates = data.daily.map(d => d.date).sort();
+  const dailyMap = {};
+  data.daily.forEach(d => { dailyMap[d.date] = d; });
+
+  const sortedDates = dates;
+  const followers = sortedDates.map(d => dailyMap[d]?.followers || 0);
+  const likes = sortedDates.map(d => dailyMap[d]?.likes || 0);
+  const comments = sortedDates.map(d => dailyMap[d]?.comments || 0);
+  const views = sortedDates.map(d => dailyMap[d]?.views || 0);
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: sortedDates.map(d => d.slice(5)),
+      datasets: [
+        { type: "line", label: "팔로워", data: followers, borderColor: "#6366F1", backgroundColor: "#6366F120", borderWidth: 2, tension: 0.3, yAxisID: "y", pointRadius: 3 },
+        { type: "bar", label: "좋아요", data: likes, backgroundColor: "#10B981", borderRadius: 3, yAxisID: "y1" },
+        { type: "bar", label: "댓글", data: comments, backgroundColor: "#F59E0B", borderRadius: 3, yAxisID: "y1" },
+        { type: "bar", label: "조회수", data: views, backgroundColor: "#E8E8EC", borderRadius: 3, yAxisID: "y1" },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { font: { size: 11 }, usePointStyle: true } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { position: "left", grid: { color: "#E8E8EC40" }, ticks: { font: { size: 10 } }, title: { display: true, text: "팔로워", font: { size: 10 } } },
+        y1: { position: "right", grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -868,6 +895,8 @@ function renderDataManagement() {
         <div class="status-card"><div class="status-card-header"><span class="status-card-name">네이버DA</span><span class="status-badge ${daCount > 0 ? 'ok' : 'warn'}">${daCount > 0 ? '정상' : '누락'}</span></div><div class="status-card-body"><p>캠페인: <strong>${daCount}개</strong> | 방식: CSV 업로드 | ${daCount > 0 ? "완료" : "미업로드"}</p></div></div>
         <div class="status-card"><div class="status-card-header"><span class="status-card-name">메타</span><span class="status-badge warn">대기</span></div><div class="status-card-body"><p>API 연동 예정</p></div></div>
         <div class="status-card"><div class="status-card-header"><span class="status-card-name">크리테오</span><span class="status-badge warn">대기</span></div><div class="status-card-body"><p>API 연동 예정</p></div></div>
+        <div class="status-card"><div class="status-card-header"><span class="status-card-name">인스타그램</span><span class="status-badge ${costSettings.instagram?.token ? 'ok' : 'warn'}">${costSettings.instagram?.token ? '연동됨' : '미연동'}</span></div><div class="status-card-body"><p>방식: Meta Graph API | ${costSettings.instagram?.accountId || '계정 미설정'}</p></div></div>
+        <div class="status-card"><div class="status-card-header"><span class="status-card-name">쓰레드</span><span class="status-badge ${costSettings.threads?.token ? 'ok' : 'warn'}">${costSettings.threads?.token ? '연동됨' : '미연동'}</span></div><div class="status-card-body"><p>방식: Threads API | ${costSettings.threads?.userId || '계정 미설정'}</p></div></div>
       </div>
     </div>`;
   } else {
@@ -929,12 +958,7 @@ function renderSettings() {
       <h4 class="section-title" style="margin-bottom:16px;">API 연동 설정</h4>
 
       <div class="settings-card">
-        <div class="settings-card-header"><span class="settings-card-icon">🔗</span><div><strong>n8n Webhook</strong><p class="settings-card-desc">네이버SA 데이터 수집</p></div><span class="status-badge ok">연결됨</span></div>
-        <div class="settings-card-body"><label class="settings-label">Webhook URL</label><div class="settings-url-row"><input type="text" class="settings-input" value="https://n8n.childylab.com/webhook" readonly><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('https://n8n.childylab.com/webhook')">복사</button></div></div>
-      </div>
-
-      <div class="settings-card">
-        <div class="settings-card-header"><span class="settings-card-icon">📸</span><div><strong>인스타그램 (Meta Graph API)</strong><p class="settings-card-desc">비즈니스 계정 인사이트 수집</p></div><span class="status-badge warn">미연동</span></div>
+        <div class="settings-card-header"><span class="settings-card-icon">📸</span><div><strong>인스타그램 (Meta Graph API)</strong><p class="settings-card-desc">비즈니스 계정 인사이트 수집</p></div><span class="status-badge ${costSettings.instagram?.token ? 'ok' : 'warn'}">${costSettings.instagram?.token ? '연동됨' : '미연동'}</span></div>
         <div class="settings-card-body">
           <div class="settings-field">
             <label class="settings-label">Instagram Business Account ID</label>

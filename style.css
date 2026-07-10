@@ -374,7 +374,7 @@ table { border-collapse: collapse; width: 100%; }
 .empty-text { font-size: 14px; color: var(--color-text-secondary); margin-bottom: var(--space-5); }
 
 /* SNS KPI Grid (5 columns) */
-.sns-kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+.sns-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
 .sns-connect-card { max-width: 640px; }
 
 /* ═══════════════════════════════════════════════════════════════
