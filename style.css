@@ -160,6 +160,9 @@ table { border-collapse: collapse; width: 100%; }
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 .kpi-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateY(-1px); }
+.kpi-card.kpi-blue { background: #EEF2FF; border-color: #C7D2FE; }
+.kpi-card.kpi-green { background: #ECFDF5; border-color: #A7F3D0; }
+.kpi-card.kpi-red { background: #FEF2F2; border-color: #FECACA; }
 .kpi-label { font-size: 10px; font-weight: 500; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
 .kpi-value { font-family: var(--font-heading); font-size: 17px; font-weight: 700; color: var(--color-text); letter-spacing: -0.03em; }
 
