@@ -26,24 +26,37 @@ let collectionStatus = {
 
 // ROI 계산용 비용 설정 (localStorage에 저장)
 let costSettings = {
-  platformFee: 0,   // 플랫폼 수수료율 %
-  logisticsFee: 0,  // 물류비 %
-  otherFee: 0       // 기타 부대비용 %
+  platformFees: {
+    smartstore: 5.5,
+    godomall: 3.3,
+    cafe24: 3.3,
+    coupang: 10.8,
+    musinsa: 0,
+  },
+  defaultPlatform: "smartstore",  // 현재 적용 중인 기본 플랫폼
+  logisticsFee: 0,   // 물류비 %
+  otherFee: 0        // 기타 부대비용 %
 };
 
 function loadCostSettings() {
   try {
-    const saved = localStorage.getItem("costSettings");
+    const saved = localStorage.getItem("costSettings_v2");
     if (saved) costSettings = JSON.parse(saved);
   } catch(e) {}
 }
 
 function saveCostSettings() {
-  localStorage.setItem("costSettings", JSON.stringify(costSettings));
+  localStorage.setItem("costSettings_v2", JSON.stringify(costSettings));
+}
+
+function getActivePlatformFeeRate() {
+  const fees = costSettings.platformFees || {};
+  const rate = fees[costSettings.defaultPlatform] || 0;
+  return rate / 100;
 }
 
 function getTotalFeeRate() {
-  return (costSettings.platformFee + costSettings.logisticsFee + costSettings.otherFee) / 100;
+  return getActivePlatformFeeRate() + (costSettings.logisticsFee / 100) + (costSettings.otherFee / 100);
 }
 
 // === 유틸 ===
@@ -109,7 +122,10 @@ function getData() {
 }
 
 function getAllData() {
-  return getData();
+  // 필터 없이 전체 데이터 (브랜드/매체 분석 등 독립 페이지용)
+  const sa = saData || [];
+  const da = daRawData.length > 0 ? getFilteredDA() : (daData || []);
+  return [...sa, ...da];
 }
 
 function applyFilters(data) {
@@ -212,7 +228,7 @@ function renderKPI() {
 
   // 비용 계산
   const logisticsRate = costSettings.logisticsFee / 100;
-  const platformRate = costSettings.platformFee / 100;
+  const platformRate = getActivePlatformFeeRate();
   const logisticsCost = revenue * logisticsRate;
   const platformFeeCost = revenue * platformRate;
 
@@ -278,7 +294,7 @@ function renderTrendChart() {
     } else {
       // ROI = (매출 - 상품원가 - 고정비 - 수수료) / 광고비 × 100
       const logRate = costSettings.logisticsFee / 100;
-      const platRate = costSettings.platformFee / 100;
+      const platRate = getActivePlatformFeeRate();
       if (cost > 0) {
         const net = revenue - (revenue * logRate) - (revenue * platRate);
         return Math.round((net / cost) * 100);
@@ -443,8 +459,8 @@ function renderTable() {
       impToPurchase: c.impressions && c.purchaseCount ? (c.purchaseCount / c.impressions) * 100 : 0,
       clkToPurchase: c.clicks && c.purchaseCount ? (c.purchaseCount / c.clicks) * 100 : 0,
       logisticsCost: (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100),
-      platformFeeCost: (c.purchaseAmount || 0) * (costSettings.platformFee / 100),
-      roi: c.cost > 0 ? (((c.purchaseAmount || 0) - (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100) - (c.purchaseAmount || 0) * (costSettings.platformFee / 100)) / c.cost) * 100 : 0,
+      platformFeeCost: (c.purchaseAmount || 0) * getActivePlatformFeeRate(),
+      roi: c.cost > 0 ? (((c.purchaseAmount || 0) - (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100) - (c.purchaseAmount || 0) * getActivePlatformFeeRate()) / c.cost) * 100 : 0,
     };
   });
 
@@ -882,52 +898,73 @@ function renderSettings() {
         <div class="settings-card-body"><p class="settings-hint">자사몰 API를 연동하면 상품별 원가 기반 ROI 계산이 가능합니다. (ERP 연동 필요)</p></div></div>
     </div>`;
   } else if (sub === "cost") {
+    const fees = costSettings.platformFees || {};
+    const platforms = [
+      { key: "smartstore", name: "스마트스토어" },
+      { key: "godomall", name: "고도몰" },
+      { key: "cafe24", name: "카페24" },
+      { key: "coupang", name: "쿠팡" },
+      { key: "musinsa", name: "무신사" },
+    ];
+    const platformRows = platforms.map(p =>
+      `<div class="settings-field" style="display:flex; align-items:center; gap:8px;">
+        <label style="font-size:13px; color:var(--color-text); min-width:100px;">${p.name}</label>
+        <input type="number" class="settings-input platform-fee-input" data-platform="${p.key}" value="${fees[p.key] || 0}" min="0" max="100" step="0.1" style="max-width:100px;">
+        <span style="font-size:12px; color:var(--color-text-muted);">%</span>
+        ${p.key === costSettings.defaultPlatform ? '<span class="status-badge ok" style="margin-left:8px;">적용중</span>' : `<button class="btn btn-ghost btn-xs set-default-platform" data-platform="${p.key}">적용</button>`}
+      </div>`
+    ).join("");
+
     body.innerHTML = `<div class="settings-section">
       <h4 class="section-title" style="margin-bottom:16px;">수수료/비용 설정</h4>
-      <p class="info-card-desc" style="margin-bottom:16px;">아래 비율을 설정하면 ROI 계산 시 매출에서 차감됩니다.<br>ROI = (매출 - 매출×수수료율합계 - 광고비) / 광고비 × 100%</p>
+      <p class="info-card-desc" style="margin-bottom:16px;">ROI = (매출 - 상품원가 - 고정비 - 몰별수수료) / 광고비 × 100%</p>
       <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">🏪</span><div><strong>몰별 수수료율</strong><p class="settings-card-desc">현재 적용: <strong>${platforms.find(p => p.key === costSettings.defaultPlatform)?.name || "-"}</strong> (${fees[costSettings.defaultPlatform] || 0}%)</p></div></div>
+        <div class="settings-card-body">${platformRows}</div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">🚚</span><div><strong>고정비 / 기타</strong></div></div>
         <div class="settings-card-body">
           <div class="settings-field">
-            <label class="settings-label">플랫폼 수수료율 (%)</label>
-            <input type="number" class="settings-input" id="inputPlatformFee" value="${costSettings.platformFee}" min="0" max="100" step="0.1" placeholder="예: 스마트스토어 5.5%">
-            <p class="settings-hint">스마트스토어, 쿠팡, 자사몰 등 판매 수수료</p>
+            <label class="settings-label">물류비 (배송+포장) %</label>
+            <input type="number" class="settings-input" id="inputLogisticsFee" value="${costSettings.logisticsFee}" min="0" max="100" step="0.1">
           </div>
           <div class="settings-field">
-            <label class="settings-label">물류비 (%)</label>
-            <input type="number" class="settings-input" id="inputLogisticsFee" value="${costSettings.logisticsFee}" min="0" max="100" step="0.1" placeholder="예: 배송비+포장비 8%">
-            <p class="settings-hint">배송비, 포장비 등 물류 관련 비용</p>
+            <label class="settings-label">기타 부대비용 %</label>
+            <input type="number" class="settings-input" id="inputOtherFee" value="${costSettings.otherFee}" min="0" max="100" step="0.1">
           </div>
-          <div class="settings-field">
-            <label class="settings-label">기타 부대비용 (%)</label>
-            <input type="number" class="settings-input" id="inputOtherFee" value="${costSettings.otherFee}" min="0" max="100" step="0.1" placeholder="예: 결제수수료, CS 등 2%">
-            <p class="settings-hint">결제 수수료, CS 비용, 기타 운영비</p>
-          </div>
-          <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
-            <button class="btn btn-primary btn-sm" id="btnSaveCost">저장</button>
-            <span id="costSaveStatus" style="font-size:12px; color:var(--color-success);"></span>
-          </div>
-          <p class="settings-hint" style="margin-top:12px;">현재 합산: <strong>${(costSettings.platformFee + costSettings.logisticsFee + costSettings.otherFee).toFixed(1)}%</strong> (매출 대비 차감)</p>
         </div>
+      </div>
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-primary btn-sm" id="btnSaveCost">저장</button>
+        <span id="costSaveStatus" style="font-size:12px; color:var(--color-success);"></span>
       </div>
       <div class="info-card" style="margin-top:16px;">
         <div class="info-card-icon">💡</div>
         <div class="info-card-content">
-          <p class="info-card-desc">제조원가(상품별 원가, 마진율)는 사내 ERP 연동이 필요하며, 상품별로 다르므로 현재 미포함입니다. 향후 ERP 연동 시 반영 예정입니다.</p>
+          <p class="info-card-desc">제조원가(상품별 원가)는 사내 ERP 연동이 필요하며 현재 미포함입니다.</p>
         </div>
       </div>
     </div>`;
-    // 저장 버튼 이벤트
+    // 이벤트
     setTimeout(() => {
       const btnSave = document.getElementById("btnSaveCost");
       if (btnSave) btnSave.addEventListener("click", () => {
-        costSettings.platformFee = parseFloat(document.getElementById("inputPlatformFee")?.value) || 0;
+        document.querySelectorAll(".platform-fee-input").forEach(input => {
+          costSettings.platformFees[input.dataset.platform] = parseFloat(input.value) || 0;
+        });
         costSettings.logisticsFee = parseFloat(document.getElementById("inputLogisticsFee")?.value) || 0;
         costSettings.otherFee = parseFloat(document.getElementById("inputOtherFee")?.value) || 0;
         saveCostSettings();
         const st = document.getElementById("costSaveStatus");
         if (st) { st.textContent = "✓ 저장됨"; setTimeout(() => st.textContent = "", 3000); }
-        // 대시보드 KPI 갱신
-        if (currentPage === "settings") renderKPI();
+      });
+      document.querySelectorAll(".set-default-platform").forEach(btn => {
+        btn.addEventListener("click", () => {
+          costSettings.defaultPlatform = btn.dataset.platform;
+          saveCostSettings();
+          renderSettings(); // 리렌더
+        });
       });
     }, 0);
   } else if (sub === "alerts") {
