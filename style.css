@@ -197,7 +197,7 @@ table { border-collapse: collapse; width: 100%; }
 /* ═══════════════════════════════════════════════════════════════
    DATA TABLE
    ═══════════════════════════════════════════════════════════════ */
-.table-wrap { padding: 0 var(--space-6) var(--space-6); overflow-x: auto; }
+.table-wrap { padding: 0 var(--space-6) var(--space-6); overflow-x: visible; }
 .data-table {
   background: var(--color-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-card); overflow: hidden; font-size: 13px;
