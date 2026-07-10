@@ -277,6 +277,7 @@ table { border-collapse: collapse; width: 100%; }
 .toggle-cell { width: 28px; text-align: center; padding: var(--space-2) var(--space-2) !important; }
 .campaign-name { font-weight: 500; white-space: nowrap; }
 .roas-high { color: var(--color-success); font-weight: 700; }
+.roi-unavailable { color: var(--color-error); font-size: 11px; font-weight: 500; cursor: help; }
 .toggle-icon { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; transition: transform 0.2s ease; }
 .toggle-icon::before { content: '▶'; font-size: 9px; color: var(--color-text-muted); }
 .toggle-icon.open { transform: rotate(90deg); }

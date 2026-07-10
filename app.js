@@ -32,27 +32,41 @@ let costSettings = {
     cafe24: 3.3,
     coupang: 10.8,
     musinsa: 0,
+    jasamol: 0,
   },
-  defaultPlatform: "smartstore",  // 현재 적용 중인 기본 플랫폼
-  logisticsFee: 0,   // 물류비 %
+  // 브랜드 → 판매 플랫폼 매핑
+  brandPlatformMap: {
+    "차일디": "godomall",
+    "아웃도어프로덕츠": "smartstore",
+    "오디너리홀리데이": "jasamol",
+    "유니버셜오버롤": "jasamol",
+    "ODP": "smartstore",
+  },
+  logisticsFee: 5,   // 물류비 고정 5%
   otherFee: 0        // 기타 부대비용 %
 };
 
 function loadCostSettings() {
   try {
-    const saved = localStorage.getItem("costSettings_v2");
+    const saved = localStorage.getItem("costSettings_v3");
     if (saved) costSettings = JSON.parse(saved);
   } catch(e) {}
 }
 
 function saveCostSettings() {
-  localStorage.setItem("costSettings_v2", JSON.stringify(costSettings));
+  localStorage.setItem("costSettings_v3", JSON.stringify(costSettings));
+}
+
+function getPlatformFeeForBrand(brand) {
+  const platformKey = costSettings.brandPlatformMap[brand];
+  if (!platformKey) return null; // 매핑 없음
+  const rate = costSettings.platformFees[platformKey];
+  return rate != null ? rate / 100 : null;
 }
 
 function getActivePlatformFeeRate() {
-  const fees = costSettings.platformFees || {};
-  const rate = fees[costSettings.defaultPlatform] || 0;
-  return rate / 100;
+  // fallback: 첫 번째 브랜드 매핑 기준 (KPI 합산용)
+  return (costSettings.platformFees["smartstore"] || 0) / 100;
 }
 
 function getTotalFeeRate() {
@@ -226,23 +240,43 @@ function renderKPI() {
   const roas = cost && revenue ? ((revenue / cost) * 100).toFixed(1) + "%" : "-";
   const convRate = clicks && purchase ? ((purchase / clicks) * 100).toFixed(2) + "%" : "-";
 
-  // 비용 계산
+  // 비용 계산 (브랜드별 수수료 가중 합산)
   const logisticsRate = costSettings.logisticsFee / 100;
-  const platformRate = getActivePlatformFeeRate();
-  const logisticsCost = revenue * logisticsRate;
-  const platformFeeCost = revenue * platformRate;
+  let totalLogistics = revenue * logisticsRate;
+  let totalPlatformFee = 0;
+  let canCalcRoi = false;
+
+  data.forEach(c => {
+    const rev = c.purchaseAmount || 0;
+    const name = (c.name || "").toLowerCase();
+    let brand = "기타";
+    if (name.includes("odp") || name.includes("오디피")) brand = "ODP";
+    else if (name.includes("오디너리") || name.includes("ordinary")) brand = "오디너리홀리데이";
+    else if (name.includes("차일디") || name.includes("childy")) brand = "차일디";
+    else if (name.includes("아웃도어") || name.includes("outdoor")) brand = "아웃도어프로덕츠";
+    else if (name.includes("유니버셜") || name.includes("universal")) brand = "유니버셜오버롤";
+    const platRate = getPlatformFeeForBrand(brand);
+    if (platRate != null) {
+      totalPlatformFee += rev * platRate;
+      canCalcRoi = true;
+    }
+  });
 
   // ROI = (매출 - 상품원가 - 고정비 - 몰별수수료) / 광고비 × 100
-  // 상품원가는 ERP 연동 전이라 0으로 처리 (카드에는 "-" 표시)
+  // 상품원가 미연동 → 계산 불가
   let roiValue = "-";
-  if (cost > 0 && revenue > 0 && (logisticsRate > 0 || platformRate > 0)) {
-    const netProfit = revenue - 0 - logisticsCost - platformFeeCost;
-    roiValue = ((netProfit / cost) * 100).toFixed(1) + "%";
-  }
+  let roiUnavailable = true; // 상품원가 없으므로 항상 계산 불가
 
   const setKpi = (id, value) => {
     const el = document.getElementById(id);
     if (el) { const v = el.querySelector(".kpi-value"); if (v) v.textContent = value; }
+  };
+  const setKpiError = (id, value, tooltip) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const v = el.querySelector(".kpi-value");
+      if (v) { v.textContent = value; v.className = "kpi-value roi-unavailable"; v.title = tooltip; }
+    }
   };
 
   setKpi("kpiCost", cost ? fmtWon(cost) : "-");
@@ -255,9 +289,14 @@ function renderKPI() {
   setKpi("kpiRevenue", revenue ? fmtWon(revenue) : "-");
   setKpi("kpiRoas", roas);
   setKpi("kpiCogs", "-"); // ERP 연동 전
-  setKpi("kpiLogistics", logisticsRate > 0 && revenue ? fmtWon(Math.round(logisticsCost)) : "-");
-  setKpi("kpiPlatformFee", platformRate > 0 && revenue ? fmtWon(Math.round(platformFeeCost)) : "-");
-  setKpi("kpiRoi", roiValue);
+  setKpi("kpiLogistics", revenue ? fmtWon(Math.round(totalLogistics)) : "-");
+  setKpi("kpiPlatformFee", totalPlatformFee > 0 ? fmtWon(Math.round(totalPlatformFee)) : "-");
+
+  if (roiUnavailable && revenue > 0) {
+    setKpiError("kpiRoi", "계산 불가", "상품원가(ERP) 미연동으로 ROI 계산 불가");
+  } else {
+    setKpi("kpiRoi", "-");
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -440,6 +479,8 @@ function renderTable() {
     if (name.includes("odp") || name.includes("오디피")) brand = "ODP";
     else if (name.includes("오디너리") || name.includes("ordinary")) brand = "오디너리홀리데이";
     else if (name.includes("차일디") || name.includes("childy")) brand = "차일디";
+    else if (name.includes("아웃도어") || name.includes("outdoor")) brand = "아웃도어프로덕츠";
+    else if (name.includes("유니버셜") || name.includes("universal")) brand = "유니버셜오버롤";
 
     const acc = (c.account || "").toUpperCase();
     let media = c.account === "SA" ? "네이버SA" : c.account === "DA" ? "네이버DA" : (c.account || "기타");
@@ -452,15 +493,18 @@ function renderTable() {
     else if (name.includes("애드부스트") || name.includes("adboost")) adType = "애드부스트";
     else if (c.account === "DA") adType = "애드부스트";
 
+    const platRate = getPlatformFeeForBrand(brand);
+    const logRate = costSettings.logisticsFee / 100;
+    const rev = c.purchaseAmount || 0;
+
     return {
       ...c, brand, media, adType,
       ctr: c.impressions ? (c.clicks / c.impressions) * 100 : 0,
       roas: c.cost ? (c.purchaseAmount / c.cost) * 100 : 0,
-      impToPurchase: c.impressions && c.purchaseCount ? (c.purchaseCount / c.impressions) * 100 : 0,
-      clkToPurchase: c.clicks && c.purchaseCount ? (c.purchaseCount / c.clicks) * 100 : 0,
-      logisticsCost: (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100),
-      platformFeeCost: (c.purchaseAmount || 0) * getActivePlatformFeeRate(),
-      roi: c.cost > 0 ? (((c.purchaseAmount || 0) - (c.purchaseAmount || 0) * (costSettings.logisticsFee / 100) - (c.purchaseAmount || 0) * getActivePlatformFeeRate()) / c.cost) * 100 : 0,
+      logisticsCost: rev * logRate,
+      platformFeeCost: platRate != null ? rev * platRate : 0,
+      platRateMapped: platRate, // null if no mapping
+      roi: null, // 상품원가 미연동 → 항상 null (계산 불가)
     };
   });
 
@@ -487,8 +531,8 @@ function renderTable() {
     const roasClass = purchaseRoas !== "-" && parseFloat(purchaseRoas) >= 300 ? "roas-high" : "";
     const ctr = c.impressions ? ((c.clicks / c.impressions) * 100).toFixed(2) + "%" : "-";
     const logStr = c.logisticsCost > 0 ? fmtWon(Math.round(c.logisticsCost)) : "-";
-    const platStr = c.platformFeeCost > 0 ? fmtWon(Math.round(c.platformFeeCost)) : "-";
-    const roiStr = c.cost > 0 && (c.logisticsCost > 0 || c.platformFeeCost > 0) ? c.roi.toFixed(1) + "%" : "-";
+    const platStr = c.platformFeeCost > 0 ? fmtWon(Math.round(c.platformFeeCost)) : (c.platRateMapped == null ? '<span class="roi-unavailable" title="브랜드-플랫폼 매핑 없음">미설정</span>' : "-");
+    const roiStr = '<span class="roi-unavailable" title="상품원가(ERP) 미연동으로 ROI 계산 불가">계산 불가</span>';
     const rowId = `daily-${currentChannel}-${idx}`;
 
     const row = document.createElement("tr");
@@ -905,13 +949,26 @@ function renderSettings() {
       { key: "cafe24", name: "카페24" },
       { key: "coupang", name: "쿠팡" },
       { key: "musinsa", name: "무신사" },
+      { key: "jasamol", name: "자사몰" },
     ];
+    const brandMap = costSettings.brandPlatformMap || {};
+    const brands = ["차일디", "아웃도어프로덕츠", "오디너리홀리데이", "유니버셜오버롤", "ODP"];
+
     const platformRows = platforms.map(p =>
       `<div class="settings-field" style="display:flex; align-items:center; gap:8px;">
         <label style="font-size:13px; color:var(--color-text); min-width:100px;">${p.name}</label>
         <input type="number" class="settings-input platform-fee-input" data-platform="${p.key}" value="${fees[p.key] || 0}" min="0" max="100" step="0.1" style="max-width:100px;">
         <span style="font-size:12px; color:var(--color-text-muted);">%</span>
-        ${p.key === costSettings.defaultPlatform ? '<span class="status-badge ok" style="margin-left:8px;">적용중</span>' : `<button class="btn btn-ghost btn-xs set-default-platform" data-platform="${p.key}">적용</button>`}
+      </div>`
+    ).join("");
+
+    const brandRows = brands.map(b =>
+      `<div class="settings-field" style="display:flex; align-items:center; gap:8px;">
+        <label style="font-size:13px; color:var(--color-text); min-width:120px;">${b}</label>
+        <select class="filter-select brand-platform-select" data-brand="${b}" style="min-width:140px;">
+          <option value="">미설정</option>
+          ${platforms.map(p => `<option value="${p.key}" ${brandMap[b] === p.key ? 'selected' : ''}>${p.name}</option>`).join("")}
+        </select>
       </div>`
     ).join("");
 
@@ -919,11 +976,15 @@ function renderSettings() {
       <h4 class="section-title" style="margin-bottom:16px;">수수료/비용 설정</h4>
       <p class="info-card-desc" style="margin-bottom:16px;">ROI = (매출 - 상품원가 - 고정비 - 몰별수수료) / 광고비 × 100%</p>
       <div class="settings-card">
-        <div class="settings-card-header"><span class="settings-card-icon">🏪</span><div><strong>몰별 수수료율</strong><p class="settings-card-desc">현재 적용: <strong>${platforms.find(p => p.key === costSettings.defaultPlatform)?.name || "-"}</strong> (${fees[costSettings.defaultPlatform] || 0}%)</p></div></div>
+        <div class="settings-card-header"><span class="settings-card-icon">🏪</span><div><strong>몰별 수수료율</strong><p class="settings-card-desc">각 판매 채널의 수수료율을 설정합니다</p></div></div>
         <div class="settings-card-body">${platformRows}</div>
       </div>
       <div class="settings-card">
-        <div class="settings-card-header"><span class="settings-card-icon">🚚</span><div><strong>고정비 / 기타</strong></div></div>
+        <div class="settings-card-header"><span class="settings-card-icon">🔗</span><div><strong>브랜드 → 플랫폼 매핑</strong><p class="settings-card-desc">각 브랜드가 주로 판매하는 플랫폼을 지정합니다</p></div></div>
+        <div class="settings-card-body">${brandRows}</div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-header"><span class="settings-card-icon">🚚</span><div><strong>고정비</strong><p class="settings-card-desc">물류비 ${costSettings.logisticsFee}% 고정 적용</p></div></div>
         <div class="settings-card-body">
           <div class="settings-field">
             <label class="settings-label">물류비 (배송+포장) %</label>
@@ -942,16 +1003,18 @@ function renderSettings() {
       <div class="info-card" style="margin-top:16px;">
         <div class="info-card-icon">💡</div>
         <div class="info-card-content">
-          <p class="info-card-desc">제조원가(상품별 원가)는 사내 ERP 연동이 필요하며 현재 미포함입니다.</p>
+          <p class="info-card-desc">제조원가(상품별 원가)는 사내 ERP 연동이 필요하며 현재 미포함입니다. 상품원가가 없으면 ROI는 "계산 불가"로 표시됩니다.</p>
         </div>
       </div>
     </div>`;
-    // 이벤트
     setTimeout(() => {
       const btnSave = document.getElementById("btnSaveCost");
       if (btnSave) btnSave.addEventListener("click", () => {
         document.querySelectorAll(".platform-fee-input").forEach(input => {
           costSettings.platformFees[input.dataset.platform] = parseFloat(input.value) || 0;
+        });
+        document.querySelectorAll(".brand-platform-select").forEach(sel => {
+          costSettings.brandPlatformMap[sel.dataset.brand] = sel.value || "";
         });
         costSettings.logisticsFee = parseFloat(document.getElementById("inputLogisticsFee")?.value) || 0;
         costSettings.otherFee = parseFloat(document.getElementById("inputOtherFee")?.value) || 0;
@@ -959,14 +1022,8 @@ function renderSettings() {
         const st = document.getElementById("costSaveStatus");
         if (st) { st.textContent = "✓ 저장됨"; setTimeout(() => st.textContent = "", 3000); }
       });
-      document.querySelectorAll(".set-default-platform").forEach(btn => {
-        btn.addEventListener("click", () => {
-          costSettings.defaultPlatform = btn.dataset.platform;
-          saveCostSettings();
-          renderSettings(); // 리렌더
-        });
-      });
     }, 0);
+
   } else if (sub === "alerts") {
     body.innerHTML = `<div class="settings-section"><div class="info-card"><div class="info-card-icon">🔔</div><div class="info-card-content"><h4 class="info-card-title">알림 설정</h4><p class="info-card-desc">ROAS 임계값 하락, 예산 초과, 수집 실패, 전환율 급변동 시 알림을 받을 수 있습니다.</p><p class="info-card-desc" style="margin-top:8px; color: var(--color-text-muted);">알림 채널 (슬랙, 이메일) 연동 후 사용 가능합니다.</p></div></div></div>`;
   }
