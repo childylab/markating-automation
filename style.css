@@ -82,6 +82,9 @@ table { border-collapse: collapse; width: 100%; }
   color: var(--color-primary); border-bottom-color: var(--color-primary);
   font-weight: 600;
 }
+.nav-divider {
+  width: 1px; height: 20px; background: var(--color-border); align-self: center; margin: 0 4px; flex-shrink: 0;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN CONTENT
