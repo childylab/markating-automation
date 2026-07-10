@@ -424,7 +424,7 @@ function renderTable() {
   if (!tbody) return;
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="15" class="load-cell">
+    tbody.innerHTML = `<tr><td colspan="16" class="load-cell">
       <button class="btn-load" id="btnLoadData">데이터 로드</button>
       <span class="load-hint">필터 조건을 설정하고 [조회] 버튼을 누르세요</span>
     </td></tr>`;
@@ -494,10 +494,11 @@ function renderTable() {
     const row = document.createElement("tr");
     row.className = "campaign-row-clickable";
     row.innerHTML = `
+      <td class="toggle-cell"><span class="toggle-icon" id="icon-${rowId}"></span></td>
       <td>${c.brand}</td>
       <td>${c.media}</td>
       <td>${c.adType}</td>
-      <td class="campaign-name"><span class="toggle-icon" id="icon-${rowId}"></span>${c.name}</td>
+      <td class="campaign-name">${c.name}</td>
       <td class="num">${fmtWon(c.cost)}</td>
       <td class="num">${fmt(c.impressions)}</td>
       <td class="num">${fmt(c.clicks)}</td>
@@ -517,10 +518,10 @@ function renderTable() {
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
     if (c.daily && c.daily.length > 0) {
-      dailyRow.innerHTML = `<td colspan="15" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
+      dailyRow.innerHTML = `<td colspan="16" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
       dailyRow.dataset.loaded = "true";
     } else {
-      dailyRow.innerHTML = `<td colspan="15" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+      dailyRow.innerHTML = `<td colspan="16" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
     }
     tbody.appendChild(dailyRow);
   });
@@ -868,7 +869,6 @@ function processDAFile(file) {
         collectionStatus.naver_da = "ok";
         updateCollectionStatus();
         if (statusEl) statusEl.innerHTML = `<p class="upload-success">✓ ${parsed.length}개 캠페인 데이터 반영 완료</p>`;
-        setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
       } else {
         collectionStatus.naver_da = "error";
         updateCollectionStatus();
@@ -1070,7 +1070,6 @@ async function loadSAData() {
     collectionStatus.naver_sa = "ok";
     updateCollectionStatus();
     render();
-    setStatus(`SA 데이터 로드 완료 — ${saData.length}개 캠페인`, "success");
   } catch (err) {
     hideProgress();
     collectionStatus.naver_sa = saData.length > 0 ? "ok" : "error";
