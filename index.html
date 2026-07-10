@@ -63,9 +63,6 @@
           </select>
           <select id="filterAdType" class="filter-select">
             <option value="all">광고유형: 전체</option>
-            <option value="shopping">쇼핑검색</option>
-            <option value="powerlink">파워링크</option>
-            <option value="adboost">애드부스트</option>
           </select>
           <select id="periodSelect" class="filter-select">
             <option value="7d">기간: 최근 7일 (오늘 제외)</option>
@@ -164,36 +161,15 @@
         </table>
       </section>
 
-      <!-- Bottom Grid -->
-      <section class="bottom-grid">
-        <div class="bottom-panel">
-          <h3 class="panel-title">드릴다운 분석</h3>
-          <div class="drilldown-cards">
-            <a href="#brand-analysis" class="drilldown-card">
-              <span class="drilldown-icon">📊</span>
-              <div class="drilldown-info">
-                <strong>브랜드/매체 분석</strong>
-                <small>브랜드·매체별 성과 비교</small>
-              </div>
-              <span class="drilldown-arrow">→</span>
-            </a>
-            <a href="#roi-analysis" class="drilldown-card">
-              <span class="drilldown-icon">💹</span>
-              <div class="drilldown-info">
-                <strong>ROI 상세 분석</strong>
-                <small>수수료·마진 반영 실제 수익률</small>
-              </div>
-              <span class="drilldown-arrow">→</span>
-            </a>
-          </div>
-        </div>
+      <!-- Bottom: Data Collection Status -->
+      <section class="bottom-grid" style="grid-template-columns: 1fr;">
         <div class="bottom-panel">
           <h3 class="panel-title">데이터 수집 상태</h3>
-          <ul class="status-list">
-            <li class="status-item"><span class="status-name">네이버SA</span><span class="status-badge ok">정상</span></li>
-            <li class="status-item"><span class="status-name">메타</span><span class="status-badge ok">정상</span></li>
-            <li class="status-item"><span class="status-name">크리테오</span><span class="status-badge ok">정상</span></li>
-            <li class="status-item"><span class="status-name">네이버DA (CSV)</span><span class="status-badge warn">누락경고</span></li>
+          <ul class="status-list" id="collectionStatus">
+            <li class="status-item"><span class="status-name">네이버SA</span><span class="status-badge pending">미수집</span></li>
+            <li class="status-item"><span class="status-name">네이버DA</span><span class="status-badge pending">미수집</span></li>
+            <li class="status-item"><span class="status-name">메타</span><span class="status-badge pending">미수집</span></li>
+            <li class="status-item"><span class="status-name">크리테오</span><span class="status-badge pending">미수집</span></li>
           </ul>
           <button class="btn btn-secondary btn-sm" id="btnUploadWrap">데이터 관리</button>
         </div>
@@ -206,7 +182,6 @@
         <div class="sub-nav" id="brandSubNav">
           <button class="sub-nav-btn active" data-subpage="brand">브랜드별 성과</button>
           <button class="sub-nav-btn" data-subpage="media">매체별 성과</button>
-          <button class="sub-nav-btn" data-subpage="campaign">캠페인 상세</button>
         </div>
         <div class="page-body" id="brandAnalysisBody"></div>
       </section>
@@ -241,6 +216,7 @@
       <section class="page-inner">
         <div class="sub-nav" id="settingsSubNav">
           <button class="sub-nav-btn active" data-subpage="api">API 연동</button>
+          <button class="sub-nav-btn" data-subpage="cost">수수료/비용 설정</button>
           <button class="sub-nav-btn" data-subpage="alerts">알림 설정</button>
         </div>
         <div class="page-body" id="settingsBody"></div>

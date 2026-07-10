@@ -16,6 +16,36 @@ let chartMode = "roas"; // "roas" or "roi"
 let trendChartInstance = null;
 let mediaChartInstance = null;
 
+// 수집 상태 추적
+let collectionStatus = {
+  naver_sa: "pending",  // pending | ok | error
+  naver_da: "pending",
+  meta: "pending",
+  criteo: "pending"
+};
+
+// ROI 계산용 비용 설정 (localStorage에 저장)
+let costSettings = {
+  platformFee: 0,   // 플랫폼 수수료율 %
+  logisticsFee: 0,  // 물류비 %
+  otherFee: 0       // 기타 부대비용 %
+};
+
+function loadCostSettings() {
+  try {
+    const saved = localStorage.getItem("costSettings");
+    if (saved) costSettings = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveCostSettings() {
+  localStorage.setItem("costSettings", JSON.stringify(costSettings));
+}
+
+function getTotalFeeRate() {
+  return (costSettings.platformFee + costSettings.logisticsFee + costSettings.otherFee) / 100;
+}
+
 // === 유틸 ===
 function fmt(n) {
   if (n >= 100000000) return (n / 100000000).toFixed(1) + "억";
@@ -180,7 +210,15 @@ function renderKPI() {
   setKpi("kpiRevenue", fmtWon(revenue));
   setKpi("kpiPurchase", purchase ? fmt(purchase) + "건" : "-");
   setKpi("kpiConvRate", convRate);
-  setKpi("kpiRoi", "-"); // 수수료/원가 미설정
+
+  // ROI 계산: (매출 - 수수료비용 - 광고비) / 광고비 × 100
+  const feeRate = getTotalFeeRate();
+  let roiValue = "-";
+  if (feeRate > 0 && cost > 0 && revenue > 0) {
+    const feeCost = revenue * feeRate;
+    roiValue = (((revenue - feeCost - cost) / cost) * 100).toFixed(1) + "%";
+  }
+  setKpi("kpiRoi", roiValue);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -215,7 +253,12 @@ function renderTrendChart() {
     if (chartMode === "roas") {
       return cost > 0 ? Math.round((revenue / cost) * 100) : 0;
     } else {
-      // ROI는 원가/수수료 미설정이므로 ROAS - 100 으로 근사
+      // ROI = (매출 - 수수료비용 - 광고비) / 광고비 × 100
+      const feeRate = getTotalFeeRate();
+      if (cost > 0 && feeRate > 0) {
+        const feeCost = revenue * feeRate;
+        return Math.round(((revenue - feeCost - cost) / cost) * 100);
+      }
       return cost > 0 ? Math.round((revenue / cost) * 100 - 100) : 0;
     }
   });
@@ -456,7 +499,6 @@ function renderBrandAnalysis() {
   }
   if (sub === "brand") body.innerHTML = renderGroupedTable(allData, "brand");
   else if (sub === "media") body.innerHTML = renderGroupedTable(allData, "media");
-  else if (sub === "campaign") body.innerHTML = renderCampaignDetailTable(allData);
 }
 
 function renderGroupedTable(data, groupBy) {
@@ -613,9 +655,13 @@ function processDAFile(file) {
       const parsed = parseNaverDaCsv(evt.target.result);
       if (parsed.length > 0) {
         daRawData = parsed; daData = parsed;
+        collectionStatus.naver_da = "ok";
+        updateCollectionStatus();
         if (statusEl) statusEl.innerHTML = `<p class="upload-success">✓ ${parsed.length}개 캠페인 데이터 반영 완료</p>`;
         setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
       } else {
+        collectionStatus.naver_da = "error";
+        updateCollectionStatus();
         if (statusEl) statusEl.innerHTML = '<p class="upload-error">CSV에서 데이터를 읽지 못했습니다.</p>';
       }
     } catch (err) {
@@ -639,8 +685,57 @@ function renderSettings() {
       <div class="settings-card"><div class="settings-card-header"><span class="settings-card-icon">🔗</span><div><strong>n8n Webhook</strong><p class="settings-card-desc">네이버SA 데이터 수집</p></div><span class="status-badge ok">연결됨</span></div>
         <div class="settings-card-body"><label class="settings-label">Webhook URL</label><div class="settings-url-row"><input type="text" class="settings-input" value="https://n8n.childylab.com/webhook" readonly><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('https://n8n.childylab.com/webhook')">복사</button></div><p class="settings-hint">SA 캠페인 데이터를 가져오는 엔드포인트입니다.</p></div></div>
       <div class="settings-card"><div class="settings-card-header"><span class="settings-card-icon">🛒</span><div><strong>자사몰 연동</strong><p class="settings-card-desc">주문/매출 데이터</p></div><span class="status-badge warn">미설정</span></div>
-        <div class="settings-card-body"><p class="settings-hint">자사몰 API를 연동하면 실제 ROI 계산이 가능합니다.</p></div></div>
+        <div class="settings-card-body"><p class="settings-hint">자사몰 API를 연동하면 상품별 원가 기반 ROI 계산이 가능합니다. (ERP 연동 필요)</p></div></div>
     </div>`;
+  } else if (sub === "cost") {
+    body.innerHTML = `<div class="settings-section">
+      <h4 class="section-title" style="margin-bottom:16px;">수수료/비용 설정</h4>
+      <p class="info-card-desc" style="margin-bottom:16px;">아래 비율을 설정하면 ROI 계산 시 매출에서 차감됩니다.<br>ROI = (매출 - 매출×수수료율합계 - 광고비) / 광고비 × 100%</p>
+      <div class="settings-card">
+        <div class="settings-card-body">
+          <div class="settings-field">
+            <label class="settings-label">플랫폼 수수료율 (%)</label>
+            <input type="number" class="settings-input" id="inputPlatformFee" value="${costSettings.platformFee}" min="0" max="100" step="0.1" placeholder="예: 스마트스토어 5.5%">
+            <p class="settings-hint">스마트스토어, 쿠팡, 자사몰 등 판매 수수료</p>
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">물류비 (%)</label>
+            <input type="number" class="settings-input" id="inputLogisticsFee" value="${costSettings.logisticsFee}" min="0" max="100" step="0.1" placeholder="예: 배송비+포장비 8%">
+            <p class="settings-hint">배송비, 포장비 등 물류 관련 비용</p>
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">기타 부대비용 (%)</label>
+            <input type="number" class="settings-input" id="inputOtherFee" value="${costSettings.otherFee}" min="0" max="100" step="0.1" placeholder="예: 결제수수료, CS 등 2%">
+            <p class="settings-hint">결제 수수료, CS 비용, 기타 운영비</p>
+          </div>
+          <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-primary btn-sm" id="btnSaveCost">저장</button>
+            <span id="costSaveStatus" style="font-size:12px; color:var(--color-success);"></span>
+          </div>
+          <p class="settings-hint" style="margin-top:12px;">현재 합산: <strong>${(costSettings.platformFee + costSettings.logisticsFee + costSettings.otherFee).toFixed(1)}%</strong> (매출 대비 차감)</p>
+        </div>
+      </div>
+      <div class="info-card" style="margin-top:16px;">
+        <div class="info-card-icon">💡</div>
+        <div class="info-card-content">
+          <p class="info-card-desc">제조원가(상품별 원가, 마진율)는 사내 ERP 연동이 필요하며, 상품별로 다르므로 현재 미포함입니다. 향후 ERP 연동 시 반영 예정입니다.</p>
+        </div>
+      </div>
+    </div>`;
+    // 저장 버튼 이벤트
+    setTimeout(() => {
+      const btnSave = document.getElementById("btnSaveCost");
+      if (btnSave) btnSave.addEventListener("click", () => {
+        costSettings.platformFee = parseFloat(document.getElementById("inputPlatformFee")?.value) || 0;
+        costSettings.logisticsFee = parseFloat(document.getElementById("inputLogisticsFee")?.value) || 0;
+        costSettings.otherFee = parseFloat(document.getElementById("inputOtherFee")?.value) || 0;
+        saveCostSettings();
+        const st = document.getElementById("costSaveStatus");
+        if (st) { st.textContent = "✓ 저장됨"; setTimeout(() => st.textContent = "", 3000); }
+        // 대시보드 KPI 갱신
+        if (currentPage === "settings") renderKPI();
+      });
+    }, 0);
   } else if (sub === "alerts") {
     body.innerHTML = `<div class="settings-section"><div class="info-card"><div class="info-card-icon">🔔</div><div class="info-card-content"><h4 class="info-card-title">알림 설정</h4><p class="info-card-desc">ROAS 임계값 하락, 예산 초과, 수집 실패, 전환율 급변동 시 알림을 받을 수 있습니다.</p><p class="info-card-desc" style="margin-top:8px; color: var(--color-text-muted);">알림 채널 (슬랙, 이메일) 연동 후 사용 가능합니다.</p></div></div></div>`;
   }
@@ -668,6 +763,44 @@ function setStatus(msg, type) {
   el.textContent = msg;
   el.className = "status-bar " + (type || "");
   if (type === "success") setTimeout(() => { el.textContent = ""; el.className = "status-bar"; }, 5000);
+}
+
+// 수집 상태 UI 업데이트
+function updateCollectionStatus() {
+  const list = document.getElementById("collectionStatus");
+  if (!list) return;
+  const items = [
+    { name: "네이버SA", key: "naver_sa" },
+    { name: "네이버DA (CSV)", key: "naver_da" },
+    { name: "메타", key: "meta" },
+    { name: "크리테오", key: "criteo" },
+  ];
+  list.innerHTML = items.map(({ name, key }) => {
+    const status = collectionStatus[key];
+    let badgeClass, badgeText;
+    if (status === "ok") { badgeClass = "ok"; badgeText = "수집 성공"; }
+    else if (status === "error") { badgeClass = "error"; badgeText = "수집 실패"; }
+    else { badgeClass = "pending"; badgeText = "미수집"; }
+    return `<li class="status-item"><span class="status-name">${name}</span><span class="status-badge ${badgeClass}">${badgeText}</span></li>`;
+  }).join("");
+}
+
+// 매체 → 광고유형 연동
+function updateAdTypeOptions() {
+  const media = document.getElementById("filterMedia")?.value || "all";
+  const adTypeEl = document.getElementById("filterAdType");
+  if (!adTypeEl) return;
+
+  let options = '<option value="all">광고유형: 전체</option>';
+  if (media === "all") {
+    options += '<option value="shopping">쇼핑검색</option><option value="powerlink">파워링크</option><option value="adboost">애드부스트</option>';
+  } else if (media === "naver_sa") {
+    options += '<option value="shopping">쇼핑검색</option><option value="powerlink">파워링크</option>';
+  } else if (media === "naver_da") {
+    options += '<option value="adboost">애드부스트</option>';
+  }
+  // 메타, 크리테오는 하위 항목 없음 → 전체만
+  adTypeEl.innerHTML = options;
 }
 
 async function loadSAData() {
@@ -703,10 +836,14 @@ async function loadSAData() {
     saData._loadedEnd = e;
     showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
     hideProgress();
+    collectionStatus.naver_sa = "ok";
+    updateCollectionStatus();
     render();
     setStatus(`SA 데이터 로드 완료 — ${saData.length}개 캠페인`, "success");
   } catch (err) {
     hideProgress();
+    collectionStatus.naver_sa = saData.length > 0 ? "ok" : "error";
+    updateCollectionStatus();
     // 데이터가 이미 있으면 필터만 적용
     if (saData.length > 0) {
       render();
@@ -768,6 +905,9 @@ function parseNaverDaCsv(text) {
 // EVENT LISTENERS & INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", () => {
+  // 비용 설정 로드
+  loadCostSettings();
+
   // Period filter — custom 날짜 표시/숨김만 처리 (자동 리프레시 안함)
   const periodEl = document.getElementById("periodSelect");
   if (periodEl) periodEl.addEventListener("change", (e) => {
@@ -775,6 +915,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const customEl = document.getElementById("customDates");
     if (customEl) customEl.style.display = currentPeriod === "custom" ? "flex" : "none";
   });
+
+  // 매체 선택 → 광고유형 옵션 연동
+  const mediaEl = document.getElementById("filterMedia");
+  if (mediaEl) mediaEl.addEventListener("change", updateAdTypeOptions);
 
   // "조회" 버튼 — 필터 조건 확정 후 데이터 로드 + 렌더
   const btnQuery = document.getElementById("btnQuery");
