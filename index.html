@@ -3,122 +3,300 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>마케팅 퍼포먼스 대시보드</title>
+  <title>Childy Lab — Marketing Analytics</title>
+
+  <!-- Fonts: DM Sans (Google), General Sans (Fontshare) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR (240px)
+  ═══════════════════════════════════════════ -->
   <aside class="sidebar">
-    <div class="sidebar-top">
-      <div class="sidebar-logo">
-        <span class="logo-icon">📊</span>
-        <div class="logo-text">
-          <span class="logo-name">Childy Lab</span>
-          <span class="logo-sub">Marketing Analytics</span>
-        </div>
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-icon">📊</span>
+      <div class="sidebar-logo-text">
+        <strong>Childy Lab</strong>
+        <small>Marketing Analytics</small>
       </div>
-      <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-channel="SA">
-          <span class="nav-icon">🔍</span>
-          <span>SA 검색광고</span>
-        </a>
-        <a href="#" class="nav-item" data-channel="DA">
-          <span class="nav-icon">📱</span>
-          <span>DA 디스플레이</span>
-        </a>
-        <a href="#" class="nav-item disabled">
-          <span class="nav-icon">📋</span>
-          <span>리포트</span>
-          <span class="nav-badge">soon</span>
-        </a>
-        <a href="#" class="nav-item disabled">
-          <span class="nav-icon">⚙️</span>
-          <span>설정</span>
-        </a>
-      </nav>
     </div>
-    <div class="sidebar-bottom">
-      <div class="sidebar-user">
-        <span class="user-avatar">C</span>
-        <span class="user-name">Childy</span>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li class="nav-item active">
+          <a href="#" class="nav-link">
+            <span class="nav-icon">🏠</span>
+            <span>메인 대시보드</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <span class="nav-icon">📈</span>
+            <span>브랜드/매체 분석</span>
+          </a>
+          <ul class="nav-sublist">
+            <li><a href="#">브랜드별 성과</a></li>
+            <li><a href="#">매체별 성과</a></li>
+            <li><a href="#">캠페인 상세</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <span class="nav-icon">💰</span>
+            <span>ROI 분석</span>
+          </a>
+          <ul class="nav-sublist">
+            <li><a href="#">기간별 ROI</a></li>
+            <li><a href="#">매체별 ROI</a></li>
+            <li><a href="#">브랜드별 ROI</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <span class="nav-icon">🗄️</span>
+            <span>데이터 관리</span>
+          </a>
+          <ul class="nav-sublist">
+            <li><a href="#">CSV 업로드</a></li>
+            <li><a href="#">수집 현황</a></li>
+            <li><a href="#">데이터 보정</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <span class="nav-icon">⚙️</span>
+            <span>설정</span>
+          </a>
+          <ul class="nav-sublist">
+            <li><a href="#">API 연동</a></li>
+            <li><a href="#">알림 설정</a></li>
+            <li><a href="#">계정 관리</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- User section -->
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">PM</div>
+      <div class="sidebar-user-info">
+        <span class="sidebar-user-name">박명수</span>
+        <span class="sidebar-user-role">관리자</span>
       </div>
     </div>
   </aside>
 
-  <main class="main">
-    <!-- Top Bar -->
-    <header class="topbar">
-      <div class="topbar-left">
-        <h2 class="page-title" id="pageTitle">SA 검색광고</h2>
-        <span class="page-sub" id="pageSub"></span>
-      </div>
-      <div class="topbar-right">
-        <select id="periodSelect" class="select-input">
-          <option value="7">최근 7일</option>
-          <option value="7ex" selected>최근 7일 (오늘제외)</option>
-          <option value="30">최근 30일</option>
-          <option value="30ex">최근 30일 (오늘제외)</option>
-          <option value="custom">직접선택</option>
-        </select>
-        <div class="custom-dates hidden" id="customDates">
-          <input type="date" id="startDate" class="date-input">
-          <span class="date-sep">~</span>
-          <input type="date" id="endDate" class="date-input">
-          <button class="btn-secondary btn-sm" id="applyDate">적용</button>
-        </div>
-        <button class="btn-secondary" id="btnRefresh">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-          새로고침
-        </button>
-        <label class="btn-secondary btn-upload hidden" id="btnUploadWrap">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          CSV 업로드
-          <input type="file" id="daFileInput" accept=".csv" style="display:none">
-        </label>
-      </div>
+  <!-- ═══════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- ─── Top Bar (sticky) ─── -->
+    <header class="top-bar">
+      <h1 class="top-bar-title" id="pageTitle">마케팅 퍼포먼스 대시보드</h1>
+      <button class="btn btn-primary" id="btnRefresh">통합 지표 상세 보기</button>
     </header>
 
-    <!-- Status -->
+    <!-- ─── Filter Row ─── -->
+    <section class="filter-row">
+      <div class="filter-group">
+        <select id="filterBrand" class="filter-select">
+          <option value="all">브랜드: 전체</option>
+          <option value="odp">ODP</option>
+          <option value="ordinary">오디너리홀리데이</option>
+          <option value="childy">차일디</option>
+        </select>
+
+        <select id="filterMedia" class="filter-select">
+          <option value="all">매체: 전체</option>
+          <option value="naver_sa">네이버SA</option>
+          <option value="naver_da">네이버DA</option>
+          <option value="meta">메타</option>
+          <option value="criteo">크리테오</option>
+        </select>
+
+        <select id="filterAdType" class="filter-select">
+          <option value="all">광고유형: 전체</option>
+          <option value="shopping">쇼핑검색</option>
+          <option value="powerlink">파워링크</option>
+          <option value="adboost">애드부스트</option>
+        </select>
+
+        <select id="periodSelect" class="filter-select">
+          <option value="7d">기간: 최근 7일 (오늘 제외)</option>
+          <option value="30d">최근 30일</option>
+          <option value="thisMonth">이번 달</option>
+          <option value="custom">직접 선택</option>
+        </select>
+      </div>
+
+      <!-- Custom date inputs (hidden by default) -->
+      <div class="filter-dates" id="customDates" style="display:none;">
+        <input type="date" id="startDate" class="filter-input">
+        <span class="filter-date-sep">~</span>
+        <input type="date" id="endDate" class="filter-input">
+        <button class="btn btn-secondary btn-sm" id="applyDate">적용</button>
+      </div>
+    </section>
+
+    <!-- ─── KPI Cards ─── -->
+    <section class="kpi-grid">
+      <div class="kpi-card" id="kpiRoi">
+        <span class="kpi-label">실제ROI</span>
+        <span class="kpi-value">—</span>
+        <span class="kpi-change up">▲ 전월 대비 +18%</span>
+      </div>
+      <div class="kpi-card" id="kpiRoas">
+        <span class="kpi-label">ROAS</span>
+        <span class="kpi-value">—</span>
+        <span class="kpi-change up">▲ 전월 대비 +12%</span>
+      </div>
+      <div class="kpi-card" id="kpiCost">
+        <span class="kpi-label">총 광고비</span>
+        <span class="kpi-value">—</span>
+        <span class="kpi-change down">▼ 전월 대비 -5%</span>
+      </div>
+      <div class="kpi-card" id="kpiRevenue">
+        <span class="kpi-label">구매전환액(매출)</span>
+        <span class="kpi-value">—</span>
+        <span class="kpi-change up">▲ 전월 대비 +22%</span>
+      </div>
+      <div class="kpi-card" id="kpiPurchase">
+        <span class="kpi-label">구매전환 수</span>
+        <span class="kpi-value">—</span>
+        <span class="kpi-change up">▲ 전월 대비 +15%</span>
+      </div>
+      <div class="kpi-card" id="kpiConvRate">
+        <span class="kpi-label">구매전환율</span>
+        <span class="kpi-value">—</span>
+        <span class="kpi-change up">▲ 전월 대비 +8%</span>
+      </div>
+    </section>
+
+    <!-- ─── Charts Section (2 columns) ─── -->
+    <section class="charts-grid">
+      <!-- Left: ROI Trend -->
+      <div class="chart-panel">
+        <div class="chart-header">
+          <h3 class="chart-title">ROI 추이 (기간별)</h3>
+          <div class="chart-toggles">
+            <button class="btn btn-ghost btn-xs active">라인</button>
+            <button class="btn btn-ghost btn-xs">바</button>
+          </div>
+        </div>
+        <div class="chart-placeholder" style="height:200px;">
+          <span class="chart-placeholder-text">차트 영역</span>
+        </div>
+      </div>
+
+      <!-- Right: Media Spend Ratio -->
+      <div class="chart-panel">
+        <div class="chart-header">
+          <h3 class="chart-title">매체별 광고비 비중</h3>
+        </div>
+        <div class="chart-placeholder donut" style="height:200px;">
+          <span class="chart-placeholder-text">도넛 차트 영역</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section Title ─── -->
+    <div class="section-heading">
+      <h2 class="section-title">기간별 상세 데이터</h2>
+    </div>
+
+    <!-- ─── Data Table ─── -->
+    <section class="table-wrap">
+      <table class="data-table" id="mainTable">
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>매체</th>
+            <th>광고비</th>
+            <th>노출</th>
+            <th>클릭</th>
+            <th>전환</th>
+            <th>매출액</th>
+            <th>ROAS</th>
+            <th>실제ROI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamic data rendered by app.js -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ─── Bottom Section (2 columns) ─── -->
+    <section class="bottom-grid">
+      <!-- Left: Drilldown Analysis -->
+      <div class="bottom-panel">
+        <h3 class="panel-title">드릴다운 분석</h3>
+        <div class="drilldown-cards">
+          <a href="#" class="drilldown-card">
+            <span class="drilldown-icon">📊</span>
+            <div class="drilldown-info">
+              <strong>브랜드/매체 분석</strong>
+              <small>브랜드·매체별 성과 비교</small>
+            </div>
+            <span class="drilldown-arrow">→</span>
+          </a>
+          <a href="#" class="drilldown-card">
+            <span class="drilldown-icon">💹</span>
+            <div class="drilldown-info">
+              <strong>ROI 상세 분석</strong>
+              <small>수수료·마진 반영 실제 수익률</small>
+            </div>
+            <span class="drilldown-arrow">→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Data Collection Status -->
+      <div class="bottom-panel">
+        <h3 class="panel-title">데이터 수집 상태</h3>
+        <ul class="status-list">
+          <li class="status-item">
+            <span class="status-name">네이버SA</span>
+            <span class="status-badge ok">정상</span>
+          </li>
+          <li class="status-item">
+            <span class="status-name">메타</span>
+            <span class="status-badge ok">정상</span>
+          </li>
+          <li class="status-item">
+            <span class="status-name">크리테오</span>
+            <span class="status-badge ok">정상</span>
+          </li>
+          <li class="status-item">
+            <span class="status-name">네이버DA (CSV)</span>
+            <span class="status-badge warn">누락경고</span>
+          </li>
+          <li class="status-item">
+            <span class="status-name">자사몰</span>
+            <span class="status-badge ok">정상</span>
+          </li>
+        </ul>
+        <button class="btn btn-secondary btn-sm" id="btnUploadWrap">데이터 관리</button>
+      </div>
+    </section>
+
+    <!-- Status bar -->
     <div class="status-bar" id="statusBar"></div>
 
-    <!-- KPI -->
-    <section class="kpi-section">
-      <div class="kpi-grid">
-        <div class="kpi-card"><span class="kpi-label">광고비</span><span class="kpi-value" id="kpiCost">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">노출</span><span class="kpi-value" id="kpiImpressions">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">클릭</span><span class="kpi-value" id="kpiClicks">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">CTR</span><span class="kpi-value" id="kpiCtr">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">구매전환</span><span class="kpi-value" id="kpiPurchase">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">구매매출</span><span class="kpi-value" id="kpiRevenue">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">구매 ROAS</span><span class="kpi-value" id="kpiRoas">-</span></div>
-        <div class="kpi-card"><span class="kpi-label">CPC</span><span class="kpi-value" id="kpiCpc">-</span></div>
-      </div>
-    </section>
+    <!-- Hidden CSV upload input for DA -->
+    <label class="visually-hidden">
+      DA 파일 업로드
+      <input type="file" id="daFileInput" accept=".csv">
+    </label>
 
-    <!-- Table -->
-    <section class="table-section">
-      <div class="table-wrap">
-        <table class="data-table" id="mainTable">
-          <thead>
-            <tr>
-              <th>캠페인</th>
-              <th class="num">광고비</th>
-              <th class="num">노출</th>
-              <th class="num">클릭</th>
-              <th class="num">CTR</th>
-              <th class="num">장바구니</th>
-              <th class="num">구매</th>
-              <th class="num">구매액</th>
-              <th class="num">구매ROAS</th>
-              <th class="num">노출→구매</th>
-              <th class="num">클릭→구매</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
   </main>
 
   <script src="app.js"></script>
