@@ -291,11 +291,9 @@ function renderKPI() {
   setKpi("kpiRevenue", revenue ? fmtWon(revenue) : "-");
   setKpi("kpiRoas", roas);
   setKpi("kpiTotalRevenue", "-"); // 전체 매출: 몰 API 연동 전
-  setKpi("kpiAdRevenue", revenue ? fmtWon(revenue) : "-");
   setKpi("kpiAdRevenueRatio", "-"); // 전체 매출 미연동
   setKpi("kpiCogs", "-"); // ERP 연동 전
   setKpi("kpiLogistics", revenue ? fmtWon(Math.round(totalLogistics)) : "-");
-  setKpi("kpiPlatformFee", totalPlatformFee > 0 ? fmtWon(Math.round(totalPlatformFee)) : "-");
   setKpi("kpiMallFee", totalPlatformFee > 0 ? fmtWon(Math.round(totalPlatformFee)) : "-");
 
   if (roiUnavailable && revenue > 0) {
@@ -318,6 +316,19 @@ function renderTrendChart() {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
 
+  if (trendChartInstance) trendChartInstance.destroy();
+  trendChartInstance = null;
+
+  // ROI는 상품원가 미연동으로 차트 표시 불가
+  if (chartMode === "roi") {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "13px 'DM Sans', sans-serif";
+    ctx.fillStyle = "#EF4444";
+    ctx.textAlign = "center";
+    ctx.fillText("ROI 계산 불가 — 상품원가(ERP) 미연동", canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
   // Aggregate daily data across all campaigns
   const data = getData();
   const dailyMap = {};
@@ -334,18 +345,7 @@ function renderTrendChart() {
   const dates = Object.keys(dailyMap).sort();
   const values = dates.map(date => {
     const { cost, revenue } = dailyMap[date];
-    if (chartMode === "roas") {
-      return cost > 0 ? Math.round((revenue / cost) * 100) : 0;
-    } else {
-      // ROI = (매출 - 상품원가 - 고정비 - 수수료) / 광고비 × 100
-      const logRate = costSettings.logisticsFee / 100;
-      const platRate = getActivePlatformFeeRate();
-      if (cost > 0) {
-        const net = revenue - (revenue * logRate) - (revenue * platRate);
-        return Math.round((net / cost) * 100);
-      }
-      return 0;
-    }
+    return cost > 0 ? Math.round((revenue / cost) * 100) : 0;
   });
   const costs = dates.map(date => dailyMap[date].cost);
 
