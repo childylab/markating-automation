@@ -390,7 +390,7 @@ function renderTable() {
   if (!tbody) return;
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
+    tbody.innerHTML = `<tr><td colspan="14" class="load-cell">
       <button class="btn-load" id="btnLoadData">데이터 로드</button>
       <span class="load-hint">필터 조건을 설정하고 [조회] 버튼을 누르세요</span>
     </td></tr>`;
@@ -400,13 +400,29 @@ function renderTable() {
   }
 
   // 계산 컬럼 추가 후 정렬
-  const enriched = data.map(c => ({
-    ...c,
-    ctr: c.impressions ? (c.clicks / c.impressions) * 100 : 0,
-    roas: c.cost ? (c.purchaseAmount / c.cost) * 100 : 0,
-    impToPurchase: c.impressions && c.purchaseCount ? (c.purchaseCount / c.impressions) * 100 : 0,
-    clkToPurchase: c.clicks && c.purchaseCount ? (c.purchaseCount / c.clicks) * 100 : 0,
-  }));
+  const enriched = data.map(c => {
+    const name = (c.name || "").toLowerCase();
+    let brand = "기타";
+    if (name.includes("odp") || name.includes("오디피")) brand = "ODP";
+    else if (name.includes("오디너리") || name.includes("ordinary")) brand = "오디너리홀리데이";
+    else if (name.includes("차일디") || name.includes("childy")) brand = "차일디";
+
+    const acc = (c.account || "").toUpperCase();
+    let media = c.account === "SA" ? "네이버SA" : c.account === "DA" ? "네이버DA" : (c.account || "기타");
+
+    let adType = "-";
+    if (name.includes("쇼핑")) adType = "쇼핑검색";
+    else if (name.includes("파워링크") || name.includes("powerlink")) adType = "파워링크";
+    else if (name.includes("애드부스트") || name.includes("adboost")) adType = "애드부스트";
+
+    return {
+      ...c, brand, media, adType,
+      ctr: c.impressions ? (c.clicks / c.impressions) * 100 : 0,
+      roas: c.cost ? (c.purchaseAmount / c.cost) * 100 : 0,
+      impToPurchase: c.impressions && c.purchaseCount ? (c.purchaseCount / c.impressions) * 100 : 0,
+      clkToPurchase: c.clicks && c.purchaseCount ? (c.purchaseCount / c.clicks) * 100 : 0,
+    };
+  });
 
   const sorted = [...enriched].sort((a, b) => {
     let va = a[sortCol], vb = b[sortCol];
@@ -437,6 +453,9 @@ function renderTable() {
     const row = document.createElement("tr");
     row.className = "campaign-row-clickable";
     row.innerHTML = `
+      <td>${c.brand}</td>
+      <td>${c.media}</td>
+      <td>${c.adType}</td>
       <td class="campaign-name"><span class="toggle-icon" id="icon-${rowId}"></span>${c.name}</td>
       <td class="num">${fmtWon(c.cost)}</td>
       <td class="num">${fmt(c.impressions)}</td>
@@ -456,10 +475,10 @@ function renderTable() {
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
     if (c.daily && c.daily.length > 0) {
-      dailyRow.innerHTML = `<td colspan="11" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
+      dailyRow.innerHTML = `<td colspan="14" class="daily-cell">${buildDailyHtml(c.daily)}</td>`;
       dailyRow.dataset.loaded = "true";
     } else {
-      dailyRow.innerHTML = `<td colspan="11" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
+      dailyRow.innerHTML = `<td colspan="14" class="daily-cell"><div class="daily-loading">로딩 중...</div></td>`;
     }
     tbody.appendChild(dailyRow);
   });
