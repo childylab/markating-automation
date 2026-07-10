@@ -1161,7 +1161,7 @@ async function loadSAData() {
     return;
   }
 
-  showProgress("캠페인 목록 가져오는 중...", 0);
+  showProgress();
   try {
     const res = await fetch(`${API}/naver-sa-campaigns?start=${s}&end=${e}`);
     if (!res.ok) throw new Error("서버 연결 실패");
@@ -1181,7 +1181,6 @@ async function loadSAData() {
     }));
     saData._loadedStart = s;
     saData._loadedEnd = e;
-    showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
     hideProgress();
     collectionStatus.naver_sa = "ok";
     updateCollectionStatus();
@@ -1200,19 +1199,21 @@ async function loadSAData() {
   }
 }
 
-function showProgress(msg, pct) {
-  let bar = document.getElementById("progressBar");
-  if (!bar) {
-    bar = document.createElement("div"); bar.id = "progressBar"; bar.className = "progress-bar";
-    const wrap = document.querySelector(".table-wrap");
-    if (wrap) wrap.prepend(bar);
+function showProgress() {
+  let overlay = document.getElementById("loadingOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "loadingOverlay";
+    overlay.className = "loading-overlay";
+    overlay.innerHTML = '<div class="loading-spinner"></div><p class="loading-text">Loading...</p>';
+    document.body.appendChild(overlay);
   }
-  if (bar) { bar.innerHTML = `<div class="progress-text">${msg}</div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>`; bar.classList.remove("hidden"); }
+  overlay.classList.remove("hidden");
 }
 
 function hideProgress() {
-  const bar = document.getElementById("progressBar");
-  if (bar) bar.classList.add("hidden");
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) overlay.classList.add("hidden");
 }
 
 // ═══════════════════════════════════════════════════════════════
