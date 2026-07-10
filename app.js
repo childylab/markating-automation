@@ -1,12 +1,17 @@
+// ═══════════════════════════════════════════════════════════════
+// Childy Lab — Marketing Analytics SPA
+// ═══════════════════════════════════════════════════════════════
+
 // === 데이터 ===
 let saData = [];
-
 let daData = [];
 let daRawData = [];
 
 // === 상태 ===
 let currentChannel = "SA";
 let currentPeriod = "7d";
+let currentPage = "dashboard";
+let currentSubPage = "";
 
 // === 유틸 ===
 function fmt(n) {
@@ -38,21 +43,17 @@ function getDateRange() {
   return { start, end };
 }
 
-// DA 원본 데이터 (CSV 파싱 전체, 필터링 전)
-
+// === DA 필터링 ===
 function getFilteredDA() {
   if (daRawData.length === 0) return daData;
-
   const { start, end } = getDateRange();
   const startStr = start.toISOString().split("T")[0].replace(/-/g, "");
   const endStr = end.toISOString().split("T")[0].replace(/-/g, "");
-
   return daRawData.map((campaign) => {
     const filtered = (campaign.daily || []).filter((d) => {
       const dateStr = d.date.replace(/-/g, "");
       return dateStr >= startStr && dateStr <= endStr;
     });
-
     return {
       ...campaign,
       cost: filtered.reduce((s, d) => s + d.cost, 0),
@@ -71,18 +72,85 @@ function getData() {
   return daRawData.length > 0 ? getFilteredDA() : daData;
 }
 
-// === KPI 렌더 ===
+function getAllData() {
+  const sa = saData || [];
+  const da = daRawData.length > 0 ? getFilteredDA() : (daData || []);
+  return [...sa, ...da];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════════════════════════════
+
+const PAGE_TITLES = {
+  "dashboard": "마케팅 퍼포먼스 대시보드",
+  "brand-analysis": "브랜드/매체 분석",
+  "roi-analysis": "ROI 분석",
+  "data-management": "데이터 관리",
+  "settings": "설정"
+};
+
+function navigateTo(page, subPage) {
+  currentPage = page || "dashboard";
+  currentSubPage = subPage || "";
+
+  // Update page title
+  const titleEl = document.getElementById("pageTitle");
+  if (titleEl) titleEl.textContent = PAGE_TITLES[currentPage] || "대시보드";
+
+  // Show/hide refresh button (only on dashboard)
+  const refreshBtn = document.getElementById("btnRefresh");
+  if (refreshBtn) refreshBtn.style.display = currentPage === "dashboard" ? "" : "none";
+
+  // Hide all pages, show current
+  document.querySelectorAll(".page-content").forEach(el => el.classList.add("hidden"));
+  const pageEl = document.getElementById("page-" + currentPage);
+  if (pageEl) pageEl.classList.remove("hidden");
+
+  // Update nav active state
+  document.querySelectorAll(".nav-item").forEach(item => {
+    if (item.dataset.page === currentPage) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+
+  // Render page-specific content
+  renderPageContent();
+}
+
+function renderPageContent() {
+  switch (currentPage) {
+    case "dashboard": render(); break;
+    case "brand-analysis": renderBrandAnalysis(); break;
+    case "roi-analysis": renderRoiAnalysis(); break;
+    case "data-management": renderDataManagement(); break;
+    case "settings": renderSettings(); break;
+  }
+}
+
+function handleHashChange() {
+  const hash = window.location.hash.replace("#", "") || "dashboard";
+  const parts = hash.split("/");
+  const page = parts[0] || "dashboard";
+  const subPage = parts[1] || "";
+  navigateTo(page, subPage);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KPI RENDER
+// ═══════════════════════════════════════════════════════════════
+
 function renderKPI() {
   const data = getData();
   const cost = data.reduce((s, c) => s + c.cost, 0);
-  const imps = data.reduce((s, c) => s + c.impressions, 0);
   const clicks = data.reduce((s, c) => s + c.clicks, 0);
   const purchase = data.reduce((s, c) => s + (c.purchaseCount || 0), 0);
   const revenue = data.reduce((s, c) => s + (c.purchaseAmount || 0), 0);
   const roas = cost && revenue ? ((revenue / cost) * 100).toFixed(1) + "%" : "-";
   const convRate = clicks && purchase ? ((purchase / clicks) * 100).toFixed(2) + "%" : "-";
 
-  // 새 KPI 카드 ID에 맞춰서 값 설정
   const setKpi = (id, value) => {
     const el = document.getElementById(id);
     if (el) {
@@ -91,7 +159,7 @@ function renderKPI() {
     }
   };
 
-  setKpi("kpiRoi", "-"); // 실제 ROI는 수수료/원가 반영 후 (미구현)
+  setKpi("kpiRoi", "-");
   setKpi("kpiRoas", roas);
   setKpi("kpiCost", fmtWon(cost));
   setKpi("kpiRevenue", fmtWon(revenue));
@@ -99,19 +167,23 @@ function renderKPI() {
   setKpi("kpiConvRate", convRate);
 }
 
-// === 테이블 렌더 ===
+// ═══════════════════════════════════════════════════════════════
+// TABLE RENDER (Dashboard)
+// ═══════════════════════════════════════════════════════════════
+
 function renderTable() {
   const data = getData();
   const tbody = document.querySelector("#mainTable tbody");
+  if (!tbody) return;
 
-  // 데이터 없으면 로드 버튼 표시
   if (!data.length) {
     if (currentChannel === "SA") {
       tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
         <button class="btn-load" id="btnLoadData">데이터 로드</button>
         <span class="load-hint">기간을 선택하고 데이터를 불러오세요</span>
       </td></tr>`;
-      document.getElementById("btnLoadData").addEventListener("click", loadSAData);
+      const loadBtn = document.getElementById("btnLoadData");
+      if (loadBtn) loadBtn.addEventListener("click", loadSAData);
     } else {
       tbody.innerHTML = `<tr><td colspan="11" class="load-cell">
         <span class="load-hint">CSV 파일을 업로드해주세요</span>
@@ -150,7 +222,6 @@ function renderTable() {
     row.addEventListener("click", () => toggleDaily(rowId, c));
     tbody.appendChild(row);
 
-    // 일별 데이터가 이미 있으면 바로 넣기
     const dailyRow = document.createElement("tr");
     dailyRow.id = rowId;
     dailyRow.className = "daily-row hidden";
@@ -208,18 +279,19 @@ async function toggleDaily(rowId, campaign) {
   if (row.dataset.loaded === "true") return;
 
   let dailyData = [];
-
   if (campaign.daily && campaign.daily.length > 0) {
     dailyData = campaign.daily;
   }
 
   if (dailyData.length === 0) {
-    row.querySelector(".daily-cell").innerHTML = '<div class="daily-loading">일별 데이터 없음</div>';
+    const cell = row.querySelector(".daily-cell");
+    if (cell) cell.innerHTML = '<div class="daily-loading">일별 데이터 없음</div>';
     row.dataset.loaded = "true";
     return;
   }
 
-  row.querySelector(".daily-cell").innerHTML = buildDailyHtml(dailyData);
+  const cell = row.querySelector(".daily-cell");
+  if (cell) cell.innerHTML = buildDailyHtml(dailyData);
   row.dataset.loaded = "true";
 }
 
@@ -228,40 +300,511 @@ function render() {
   renderTable();
 }
 
-// === 이벤트 ===
+// ═══════════════════════════════════════════════════════════════
+// PAGE: BRAND/MEDIA ANALYSIS
+// ═══════════════════════════════════════════════════════════════
 
-// 기간 필터
-document.getElementById("periodSelect").addEventListener("change", (e) => {
-  currentPeriod = e.target.value;
-  const customEl = document.getElementById("customDates");
-  if (customEl) customEl.style.display = currentPeriod === "custom" ? "flex" : "none";
-  if (currentPeriod !== "custom") render();
-});
+function renderBrandAnalysis() {
+  const body = document.getElementById("brandAnalysisBody");
+  if (!body) return;
+  const sub = currentSubPage || "brand";
+  updateSubNav("brandSubNav", sub);
 
-const applyBtn = document.getElementById("applyDate");
-if (applyBtn) applyBtn.addEventListener("click", render);
+  const allData = getAllData();
 
-// === 서버 연동 ===
+  if (allData.length === 0) {
+    body.innerHTML = `<div class="empty-state">
+      <p class="empty-text">데이터가 없습니다. 먼저 대시보드에서 SA 데이터를 로드하거나 DA CSV를 업로드해주세요.</p>
+      <a href="#dashboard" class="btn btn-primary">대시보드로 이동</a>
+    </div>`;
+    return;
+  }
+
+  if (sub === "brand") {
+    body.innerHTML = renderBrandTable(allData);
+  } else if (sub === "media") {
+    body.innerHTML = renderMediaTable(allData);
+  } else if (sub === "campaign") {
+    body.innerHTML = renderCampaignDetailTable(allData);
+  }
+}
+
+function renderBrandTable(data) {
+  // Group by brand name prefix
+  const brands = {};
+  data.forEach(c => {
+    let brand = "기타";
+    const name = (c.name || "").toLowerCase();
+    if (name.includes("odp") || name.includes("오디피")) brand = "ODP";
+    else if (name.includes("오디너리") || name.includes("ordinary")) brand = "오디너리홀리데이";
+    else if (name.includes("차일디") || name.includes("childy")) brand = "차일디";
+    if (!brands[brand]) brands[brand] = { cost: 0, impressions: 0, clicks: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0 };
+    brands[brand].cost += c.cost || 0;
+    brands[brand].impressions += c.impressions || 0;
+    brands[brand].clicks += c.clicks || 0;
+    brands[brand].purchaseCount += c.purchaseCount || 0;
+    brands[brand].purchaseAmount += c.purchaseAmount || 0;
+    brands[brand].cartCount += c.cartCount || 0;
+  });
+
+  let html = `<div class="table-wrap"><table class="data-table">
+    <thead><tr>
+      <th>브랜드</th><th class="num">광고비</th><th class="num">노출</th><th class="num">클릭</th>
+      <th class="num">CTR</th><th class="num">구매</th><th class="num">구매액</th><th class="num">ROAS</th>
+    </tr></thead><tbody>`;
+
+  Object.entries(brands).sort((a, b) => b[1].cost - a[1].cost).forEach(([name, d]) => {
+    const ctr = d.impressions ? ((d.clicks / d.impressions) * 100).toFixed(2) + "%" : "-";
+    const roas = d.cost ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
+    html += `<tr>
+      <td>${name}</td><td class="num">${fmtWon(d.cost)}</td><td class="num">${fmt(d.impressions)}</td>
+      <td class="num">${fmt(d.clicks)}</td><td class="num">${ctr}</td>
+      <td class="num">${fmt(d.purchaseCount)}</td><td class="num">${fmtWon(d.purchaseAmount)}</td>
+      <td class="num">${roas}</td>
+    </tr>`;
+  });
+
+  html += "</tbody></table></div>";
+  return html;
+}
+
+function renderMediaTable(data) {
+  const media = {};
+  data.forEach(c => {
+    const account = c.account || "기타";
+    if (!media[account]) media[account] = { cost: 0, impressions: 0, clicks: 0, purchaseCount: 0, purchaseAmount: 0, cartCount: 0 };
+    media[account].cost += c.cost || 0;
+    media[account].impressions += c.impressions || 0;
+    media[account].clicks += c.clicks || 0;
+    media[account].purchaseCount += c.purchaseCount || 0;
+    media[account].purchaseAmount += c.purchaseAmount || 0;
+    media[account].cartCount += c.cartCount || 0;
+  });
+
+  let html = `<div class="table-wrap"><table class="data-table">
+    <thead><tr>
+      <th>매체</th><th class="num">광고비</th><th class="num">노출</th><th class="num">클릭</th>
+      <th class="num">CTR</th><th class="num">구매</th><th class="num">구매액</th><th class="num">ROAS</th>
+    </tr></thead><tbody>`;
+
+  Object.entries(media).sort((a, b) => b[1].cost - a[1].cost).forEach(([name, d]) => {
+    const ctr = d.impressions ? ((d.clicks / d.impressions) * 100).toFixed(2) + "%" : "-";
+    const roas = d.cost ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
+    const label = name === "SA" ? "네이버SA" : name === "DA" ? "네이버DA" : name;
+    html += `<tr>
+      <td>${label}</td><td class="num">${fmtWon(d.cost)}</td><td class="num">${fmt(d.impressions)}</td>
+      <td class="num">${fmt(d.clicks)}</td><td class="num">${ctr}</td>
+      <td class="num">${fmt(d.purchaseCount)}</td><td class="num">${fmtWon(d.purchaseAmount)}</td>
+      <td class="num">${roas}</td>
+    </tr>`;
+  });
+
+  html += "</tbody></table></div>";
+  return html;
+}
+
+function renderCampaignDetailTable(data) {
+  const sorted = [...data].sort((a, b) => b.cost - a.cost);
+  let html = `<div class="table-wrap"><table class="data-table">
+    <thead><tr>
+      <th>캠페인</th><th class="num">매체</th><th class="num">광고비</th><th class="num">노출</th>
+      <th class="num">클릭</th><th class="num">CTR</th><th class="num">구매</th><th class="num">구매액</th><th class="num">ROAS</th>
+    </tr></thead><tbody>`;
+
+  sorted.forEach(c => {
+    const ctr = c.impressions ? ((c.clicks / c.impressions) * 100).toFixed(2) + "%" : "-";
+    const roas = c.cost ? ((c.purchaseAmount / c.cost) * 100).toFixed(1) + "%" : "-";
+    const mediaLabel = c.account === "SA" ? "네이버SA" : c.account === "DA" ? "네이버DA" : (c.account || "-");
+    html += `<tr>
+      <td>${c.name}</td><td class="num">${mediaLabel}</td><td class="num">${fmtWon(c.cost)}</td>
+      <td class="num">${fmt(c.impressions)}</td><td class="num">${fmt(c.clicks)}</td><td class="num">${ctr}</td>
+      <td class="num">${fmt(c.purchaseCount || 0)}</td><td class="num">${fmtWon(c.purchaseAmount || 0)}</td>
+      <td class="num">${roas}</td>
+    </tr>`;
+  });
+
+  html += "</tbody></table></div>";
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: ROI ANALYSIS
+// ═══════════════════════════════════════════════════════════════
+
+function renderRoiAnalysis() {
+  const body = document.getElementById("roiAnalysisBody");
+  if (!body) return;
+  const sub = currentSubPage || "period";
+  updateSubNav("roiSubNav", sub);
+
+  body.innerHTML = `
+    <div class="info-card">
+      <div class="info-card-icon">💡</div>
+      <div class="info-card-content">
+        <h4 class="info-card-title">ROI 분석 기능 안내</h4>
+        <p class="info-card-desc">
+          실제 ROI를 계산하려면 다음 데이터가 필요합니다:
+        </p>
+        <ul class="info-list">
+          <li>상품별 원가 / 마진율</li>
+          <li>플랫폼 수수료율 (스마트스토어, 자사몰 등)</li>
+          <li>배송비 / 포장비 등 부대비용</li>
+        </ul>
+        <p class="info-card-desc" style="margin-top:12px;">
+          <strong>현재 상태:</strong> 원가/마진 데이터가 아직 설정되지 않았습니다.<br>
+          설정 > API 연동에서 자사몰 데이터를 연결하면 자동으로 ROI가 계산됩니다.
+        </p>
+        <div style="margin-top:16px;">
+          <a href="#settings/api" class="btn btn-primary btn-sm">설정으로 이동</a>
+        </div>
+      </div>
+    </div>
+    <div class="roi-formula-card">
+      <h4 class="info-card-title">ROI 계산 공식</h4>
+      <div class="formula">
+        <code>실제ROI = (매출 - 원가 - 수수료 - 광고비) / 광고비 × 100%</code>
+      </div>
+      <p class="info-card-desc" style="margin-top:8px;">
+        현재 ROAS만 표시 가능합니다: ROAS = 매출 / 광고비 × 100%
+      </p>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: DATA MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+function renderDataManagement() {
+  const body = document.getElementById("dataManagementBody");
+  if (!body) return;
+  const sub = currentSubPage || "upload";
+  updateSubNav("dataSubNav", sub);
+
+  if (sub === "upload") {
+    body.innerHTML = `
+      <div class="upload-section">
+        <h4 class="section-title" style="margin-bottom:16px;">네이버 DA CSV 업로드</h4>
+        <div class="upload-dropzone" id="dropZone">
+          <div class="upload-dropzone-inner">
+            <span class="upload-icon">📁</span>
+            <p class="upload-title">CSV 파일을 여기에 드래그하거나 클릭하여 업로드</p>
+            <p class="upload-desc">네이버 DA 성과 리포트 (애드부스트 등) CSV 파일을 업로드하세요</p>
+            <button class="btn btn-primary btn-sm" id="btnSelectFile">파일 선택</button>
+          </div>
+        </div>
+        <div class="upload-info">
+          <p><strong>지원 형식:</strong> CSV (UTF-8, EUC-KR)</p>
+          <p><strong>필수 컬럼:</strong> 캠페인 이름, 기간, 총비용, 노출수, 클릭수, 구매완료 수, 장바구니 담기 수, 구매완료 전환매출액</p>
+        </div>
+        <div id="uploadStatus"></div>
+      </div>
+    `;
+    initDropZone();
+  } else if (sub === "status") {
+    renderDataStatus(body);
+  } else if (sub === "correction") {
+    body.innerHTML = `
+      <div class="info-card">
+        <div class="info-card-icon">🔧</div>
+        <div class="info-card-content">
+          <h4 class="info-card-title">데이터 보정</h4>
+          <p class="info-card-desc">
+            수집된 데이터의 이상치 보정, 누락 데이터 보간, 중복 제거 등의 기능을 제공합니다.
+          </p>
+          <p class="info-card-desc" style="margin-top:8px; color: var(--color-text-muted);">
+            현재 보정이 필요한 데이터가 없습니다.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderDataStatus(body) {
+  const saCount = saData.length;
+  const daCount = daRawData.length || daData.length;
+  body.innerHTML = `
+    <div class="status-overview">
+      <h4 class="section-title" style="margin-bottom:16px;">데이터 수집 현황</h4>
+      <div class="status-cards-grid">
+        <div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-name">네이버SA</span>
+            <span class="status-badge ok">정상</span>
+          </div>
+          <div class="status-card-body">
+            <p>캠페인 수: <strong>${saCount}개</strong></p>
+            <p>수집 방식: API (n8n Webhook)</p>
+            <p>마지막 수집: ${saCount > 0 ? "로드 완료" : "미수집"}</p>
+          </div>
+        </div>
+        <div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-name">네이버DA</span>
+            <span class="status-badge ${daCount > 0 ? 'ok' : 'warn'}">${daCount > 0 ? '정상' : '누락경고'}</span>
+          </div>
+          <div class="status-card-body">
+            <p>캠페인 수: <strong>${daCount}개</strong></p>
+            <p>수집 방식: CSV 수동 업로드</p>
+            <p>마지막 수집: ${daCount > 0 ? "업로드 완료" : "미업로드"}</p>
+          </div>
+        </div>
+        <div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-name">메타</span>
+            <span class="status-badge ok">정상</span>
+          </div>
+          <div class="status-card-body">
+            <p>수집 방식: API 연동 예정</p>
+            <p>상태: 연동 대기</p>
+          </div>
+        </div>
+        <div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-name">크리테오</span>
+            <span class="status-badge ok">정상</span>
+          </div>
+          <div class="status-card-body">
+            <p>수집 방식: API 연동 예정</p>
+            <p>상태: 연동 대기</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function initDropZone() {
+  const dropZone = document.getElementById("dropZone");
+  const btnSelect = document.getElementById("btnSelectFile");
+  const daInput = document.getElementById("daFileInput");
+  if (!dropZone || !daInput) return;
+
+  if (btnSelect) {
+    btnSelect.addEventListener("click", (e) => {
+      e.stopPropagation();
+      daInput.click();
+    });
+  }
+
+  dropZone.addEventListener("click", () => daInput.click());
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".csv")) {
+      processDAFile(file);
+    } else {
+      const statusEl = document.getElementById("uploadStatus");
+      if (statusEl) statusEl.innerHTML = '<p class="upload-error">CSV 파일만 업로드 가능합니다.</p>';
+    }
+  });
+}
+
+function processDAFile(file) {
+  const statusEl = document.getElementById("uploadStatus");
+  if (statusEl) statusEl.innerHTML = '<p class="upload-processing">파일 처리 중...</p>';
+
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const parsed = parseNaverDaCsv(evt.target.result);
+      if (parsed.length > 0) {
+        daRawData = parsed;
+        daData = parsed;
+        if (statusEl) statusEl.innerHTML = `<p class="upload-success">✓ ${parsed.length}개 캠페인 데이터 반영 완료</p>`;
+        setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
+      } else {
+        if (statusEl) statusEl.innerHTML = '<p class="upload-error">CSV에서 데이터를 읽지 못했습니다.</p>';
+        setStatus("CSV에서 데이터를 읽지 못했어요", "error");
+      }
+    } catch (err) {
+      if (statusEl) statusEl.innerHTML = `<p class="upload-error">파싱 에러: ${err.message}</p>`;
+      setStatus("CSV 파싱 에러: " + err.message, "error");
+    }
+  };
+  reader.readAsText(file, "utf-8");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: SETTINGS
+// ═══════════════════════════════════════════════════════════════
+
+function renderSettings() {
+  const body = document.getElementById("settingsBody");
+  if (!body) return;
+  const sub = currentSubPage || "api";
+  updateSubNav("settingsSubNav", sub);
+
+  if (sub === "api") {
+    body.innerHTML = `
+      <div class="settings-section">
+        <h4 class="section-title" style="margin-bottom:16px;">API 연동 설정</h4>
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <span class="settings-card-icon">🔗</span>
+            <div>
+              <strong>n8n Webhook</strong>
+              <p class="settings-card-desc">네이버SA 데이터 수집 엔드포인트</p>
+            </div>
+            <span class="status-badge ok">연결됨</span>
+          </div>
+          <div class="settings-card-body">
+            <label class="settings-label">Webhook URL</label>
+            <div class="settings-url-row">
+              <input type="text" class="settings-input" value="https://n8n.childylab.com/webhook" readonly>
+              <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('https://n8n.childylab.com/webhook')">복사</button>
+            </div>
+            <p class="settings-hint">이 엔드포인트를 통해 SA 캠페인 데이터를 가져옵니다.</p>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <span class="settings-card-icon">🛒</span>
+            <div>
+              <strong>자사몰 연동</strong>
+              <p class="settings-card-desc">주문/매출 데이터 연동</p>
+            </div>
+            <span class="status-badge warn">미설정</span>
+          </div>
+          <div class="settings-card-body">
+            <p class="settings-hint">자사몰 API를 연동하면 실제 ROI 계산이 가능합니다.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (sub === "alerts") {
+    body.innerHTML = `
+      <div class="settings-section">
+        <h4 class="section-title" style="margin-bottom:16px;">알림 설정</h4>
+        <div class="info-card">
+          <div class="info-card-icon">🔔</div>
+          <div class="info-card-content">
+            <h4 class="info-card-title">알림 기능 안내</h4>
+            <p class="info-card-desc">
+              다음 조건에서 알림을 받을 수 있습니다:
+            </p>
+            <ul class="info-list">
+              <li>ROAS가 설정 임계값 이하로 하락할 때</li>
+              <li>일일 광고비가 예산 한도 초과 시</li>
+              <li>데이터 수집 실패 시</li>
+              <li>전환율 급변동 감지 시</li>
+            </ul>
+            <p class="info-card-desc" style="margin-top:12px; color: var(--color-text-muted);">
+              알림 채널 (슬랙, 이메일) 연동 후 사용 가능합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (sub === "account") {
+    body.innerHTML = `
+      <div class="settings-section">
+        <h4 class="section-title" style="margin-bottom:16px;">계정 관리</h4>
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <span class="settings-card-icon">👤</span>
+            <div>
+              <strong>박명수</strong>
+              <p class="settings-card-desc">관리자</p>
+            </div>
+          </div>
+          <div class="settings-card-body">
+            <div class="settings-field">
+              <label class="settings-label">이름</label>
+              <input type="text" class="settings-input" value="박명수" readonly>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label">역할</label>
+              <input type="text" class="settings-input" value="관리자" readonly>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUB-NAV HELPER
+// ═══════════════════════════════════════════════════════════════
+
+function updateSubNav(navId, activeSub) {
+  const nav = document.getElementById(navId);
+  if (!nav) return;
+  nav.querySelectorAll(".sub-nav-btn").forEach(btn => {
+    if (btn.dataset.subpage === activeSub) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SERVER / API
+// ═══════════════════════════════════════════════════════════════
+
 const API = "https://n8n.childylab.com/webhook";
 
-function setStatus(msg, type = "") {
+function setStatus(msg, type) {
   const el = document.getElementById("statusBar");
+  if (!el) return;
   el.textContent = msg;
-  el.className = "status-bar " + type;
+  el.className = "status-bar " + (type || "");
   if (type === "success") setTimeout(() => { el.textContent = ""; el.className = "status-bar"; }, 5000);
 }
 
-// 새로고침/데이터 로드 버튼
-const refreshBtn = document.getElementById("btnRefresh");
-if (refreshBtn) {
-  refreshBtn.addEventListener("click", async () => {
-    await loadSAData();
-  });
+async function loadSAData() {
+  const { start, end } = getDateRange();
+  const s = start.toISOString().split("T")[0];
+  const e = end.toISOString().split("T")[0];
+
+  showProgress("캠페인 목록 가져오는 중...", 0);
+
+  try {
+    const res = await fetch(`${API}/naver-sa-campaigns?start=${s}&end=${e}`);
+    if (!res.ok) throw new Error("서버 연결 실패");
+    const data = await res.json();
+
+    saData = data.map((c) => ({
+      id: c.id, name: c.name, impressions: c.impressions,
+      clicks: c.clicks, cost: c.cost,
+      purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
+      cartCount: c.cartCount || 0, account: "SA",
+      daily: (c.daily || []).map(d => ({
+        date: d.date, purchaseCount: d.purchaseCount || 0,
+        purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0,
+        cost: d.cost != null ? d.cost : null,
+        impressions: d.impressions != null ? d.impressions : null,
+        clicks: d.clicks != null ? d.clicks : null
+      })),
+    }));
+
+    showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
+    hideProgress();
+    render();
+    setStatus(`SA 데이터 로드 완료 — ${saData.length}개 캠페인, 일별 데이터 포함`, "success");
+  } catch (err) {
+    hideProgress();
+    setStatus("SA 데이터 로드 실패 — 서버(python server.py) 실행 필요", "error");
+  }
 }
 
 async function refreshSA() {
   const btn = document.getElementById("btnRefresh");
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
   setStatus("SA 데이터를 가져오는 중...");
 
   const { start, end } = getDateRange();
@@ -283,40 +826,7 @@ async function refreshSA() {
   } catch (e) {
     setStatus("SA 실패 — 서버(python server.py) 실행 필요", "error");
   }
-  btn.disabled = false;
-}
-
-async function loadSAData() {
-  const { start, end } = getDateRange();
-  const s = start.toISOString().split("T")[0];
-  const e = end.toISOString().split("T")[0];
-
-  // 프로그레스바 표시
-  showProgress("캠페인 목록 가져오는 중...", 0);
-
-  try {
-    // 1. 캠페인 목록 + 합산 데이터
-    const res = await fetch(`${API}/naver-sa-campaigns?start=${s}&end=${e}`);
-    if (!res.ok) throw new Error("서버 연결 실패");
-    const data = await res.json();
-
-    saData = data.map((c) => ({
-      id: c.id, name: c.name, impressions: c.impressions,
-      clicks: c.clicks, cost: c.cost,
-      purchaseCount: c.purchaseCount || 0, purchaseAmount: c.purchaseAmount || 0,
-      cartCount: c.cartCount || 0, account: "SA",
-      daily: (c.daily || []).map(d => ({ date: d.date, purchaseCount: d.purchaseCount || 0, purchaseAmount: d.purchaseAmount || 0, cartCount: d.cartCount || 0, cost: d.cost != null ? d.cost : null, impressions: d.impressions != null ? d.impressions : null, clicks: d.clicks != null ? d.clicks : null })),
-    }));
-
-    showProgress(`캠페인 ${saData.length}개 로드 완료`, 100);
-
-    hideProgress();
-    render();
-    setStatus(`SA 데이터 로드 완료 — ${saData.length}개 캠페인, 일별 데이터 포함`, "success");
-  } catch (err) {
-    hideProgress();
-    setStatus("SA 데이터 로드 실패 — 서버(python server.py) 실행 필요", "error");
-  }
+  if (btn) btn.disabled = false;
 }
 
 function showProgress(msg, pct) {
@@ -325,13 +835,16 @@ function showProgress(msg, pct) {
     bar = document.createElement("div");
     bar.id = "progressBar";
     bar.className = "progress-bar";
-    document.querySelector(".table-section").prepend(bar);
+    const tableSection = document.querySelector(".table-wrap");
+    if (tableSection) tableSection.prepend(bar);
   }
-  bar.innerHTML = `
-    <div class="progress-text">${msg}</div>
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-  `;
-  bar.classList.remove("hidden");
+  if (bar) {
+    bar.innerHTML = `
+      <div class="progress-text">${msg}</div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    `;
+    bar.classList.remove("hidden");
+  }
 }
 
 function hideProgress() {
@@ -339,34 +852,9 @@ function hideProgress() {
   if (bar) bar.classList.add("hidden");
 }
 
-// DA CSV 업로드
-const daInput = document.getElementById("daFileInput");
-if (daInput) {
-  daInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setStatus("DA CSV 파일 읽는 중...");
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const parsed = parseNaverDaCsv(evt.target.result);
-        if (parsed.length > 0) {
-          daRawData = parsed;
-          daData = parsed;
-          render();
-          setStatus(`DA 데이터 반영 완료 — ${parsed.length}개 캠페인`, "success");
-        } else {
-          setStatus("CSV에서 데이터를 읽지 못했어요", "error");
-        }
-      } catch (err) {
-        setStatus("CSV 파싱 에러: " + err.message, "error");
-      }
-    };
-    reader.readAsText(file, "utf-8");
-    e.target.value = "";
-  });
-}
+// ═══════════════════════════════════════════════════════════════
+// CSV PARSER
+// ═══════════════════════════════════════════════════════════════
 
 function parseNaverDaCsv(text) {
   const lines = text.trim().split("\n");
@@ -433,5 +921,68 @@ function parseNaverDaCsv(text) {
   return Object.values(campaigns);
 }
 
-// === 초기 렌더 ===
-render();
+// ═══════════════════════════════════════════════════════════════
+// EVENT LISTENERS & INIT
+// ═══════════════════════════════════════════════════════════════
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Period filter
+  const periodEl = document.getElementById("periodSelect");
+  if (periodEl) {
+    periodEl.addEventListener("change", (e) => {
+      currentPeriod = e.target.value;
+      const customEl = document.getElementById("customDates");
+      if (customEl) customEl.style.display = currentPeriod === "custom" ? "flex" : "none";
+      if (currentPeriod !== "custom") render();
+    });
+  }
+
+  const applyBtn = document.getElementById("applyDate");
+  if (applyBtn) applyBtn.addEventListener("click", render);
+
+  // Refresh button
+  const refreshBtn = document.getElementById("btnRefresh");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", async () => {
+      await loadSAData();
+    });
+  }
+
+  // DA file input change (global, hidden input)
+  const daInput = document.getElementById("daFileInput");
+  if (daInput) {
+    daInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      processDAFile(file);
+      e.target.value = "";
+    });
+  }
+
+  // "데이터 관리" button on dashboard
+  const btnUpload = document.getElementById("btnUploadWrap");
+  if (btnUpload) {
+    btnUpload.addEventListener("click", () => {
+      window.location.hash = "#data-management/upload";
+    });
+  }
+
+  // Sub-nav click delegation
+  document.querySelectorAll(".sub-nav").forEach(nav => {
+    nav.addEventListener("click", (e) => {
+      const btn = e.target.closest(".sub-nav-btn");
+      if (!btn) return;
+      const subPage = btn.dataset.subpage;
+      if (subPage) {
+        currentSubPage = subPage;
+        window.location.hash = `#${currentPage}/${subPage}`;
+      }
+    });
+  });
+
+  // Hash-based routing
+  window.addEventListener("hashchange", handleHashChange);
+
+  // Initial route
+  handleHashChange();
+});

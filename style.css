@@ -1162,3 +1162,394 @@ table {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SPA PAGE CONTENT
+   ═══════════════════════════════════════════════════════════════ */
+
+.page-content {
+  animation: fadeIn 0.2s ease both;
+}
+
+.page-content.hidden {
+  display: none !important;
+}
+
+.page-inner {
+  padding: var(--space-6);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SUB-NAVIGATION (tabs within pages)
+   ═══════════════════════════════════════════════════════════════ */
+
+.sub-nav {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 0 0 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-6);
+}
+
+.sub-nav-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.sub-nav-btn:hover {
+  color: var(--color-primary);
+}
+
+.sub-nav-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.page-body {
+  padding-top: var(--space-2);
+}
+
+.page-body .table-wrap {
+  padding: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INFO CARD (ROI, placeholder pages)
+   ═══════════════════════════════════════════════════════════════ */
+
+.info-card {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-4);
+}
+
+.info-card-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.info-card-content {
+  flex: 1;
+}
+
+.info-card-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.info-card-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.info-list {
+  margin-top: var(--space-2);
+  padding-left: var(--space-5);
+  list-style: disc;
+}
+
+.info-list li {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  list-style: disc;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ROI FORMULA CARD
+   ═══════════════════════════════════════════════════════════════ */
+
+.roi-formula-card {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-4);
+}
+
+.formula {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-btn);
+  margin-top: var(--space-2);
+}
+
+.formula code {
+  font-family: 'DM Sans', monospace;
+  font-size: 13px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UPLOAD / DROP ZONE (Data Management)
+   ═══════════════════════════════════════════════════════════════ */
+
+.upload-section {
+  max-width: 640px;
+}
+
+.upload-dropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  margin-bottom: var(--space-4);
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.upload-dropzone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.upload-icon {
+  font-size: 36px;
+}
+
+.upload-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.upload-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.upload-info {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-btn);
+  margin-bottom: var(--space-4);
+}
+
+.upload-processing {
+  font-size: 13px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.upload-success {
+  font-size: 13px;
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.upload-error {
+  font-size: 13px;
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STATUS CARDS GRID (Data Management > Status)
+   ═══════════════════════════════════════════════════════════════ */
+
+.status-overview {
+  max-width: 800px;
+}
+
+.status-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.status-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.status-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.status-card-body {
+  padding: var(--space-4) var(--space-5);
+}
+
+.status-card-body p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS PAGE
+   ═══════════════════════════════════════════════════════════════ */
+
+.settings-section {
+  max-width: 640px;
+}
+
+.settings-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-card-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.settings-card-header > div {
+  flex: 1;
+}
+
+.settings-card-header strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  display: block;
+}
+
+.settings-card-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.settings-card-body {
+  padding: var(--space-4) var(--space-5);
+}
+
+.settings-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-base);
+}
+
+.settings-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.settings-url-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.settings-url-row .settings-input {
+  flex: 1;
+}
+
+.settings-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+
+.settings-field {
+  margin-bottom: var(--space-4);
+}
+
+.settings-field:last-child {
+  margin-bottom: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════════════════════════ */
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+}
+
+.empty-text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAV SUBLIST — always show for active items
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav-sublist li a.active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .status-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sub-nav {
+    padding: var(--space-3) var(--space-4) 0;
+    overflow-x: auto;
+  }
+
+  .page-inner {
+    padding: var(--space-4);
+  }
+}

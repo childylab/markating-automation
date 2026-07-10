@@ -30,54 +30,54 @@
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <ul class="nav-list">
-        <li class="nav-item active">
-          <a href="#" class="nav-link">
+        <li class="nav-item active" data-page="dashboard">
+          <a href="#dashboard" class="nav-link">
             <span class="nav-icon">🏠</span>
             <span>메인 대시보드</span>
           </a>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item" data-page="brand-analysis">
+          <a href="#brand-analysis" class="nav-link">
             <span class="nav-icon">📈</span>
             <span>브랜드/매체 분석</span>
           </a>
           <ul class="nav-sublist">
-            <li><a href="#">브랜드별 성과</a></li>
-            <li><a href="#">매체별 성과</a></li>
-            <li><a href="#">캠페인 상세</a></li>
+            <li><a href="#brand-analysis/brand" data-subpage="brand">브랜드별 성과</a></li>
+            <li><a href="#brand-analysis/media" data-subpage="media">매체별 성과</a></li>
+            <li><a href="#brand-analysis/campaign" data-subpage="campaign">캠페인 상세</a></li>
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item" data-page="roi-analysis">
+          <a href="#roi-analysis" class="nav-link">
             <span class="nav-icon">💰</span>
             <span>ROI 분석</span>
           </a>
           <ul class="nav-sublist">
-            <li><a href="#">기간별 ROI</a></li>
-            <li><a href="#">매체별 ROI</a></li>
-            <li><a href="#">브랜드별 ROI</a></li>
+            <li><a href="#roi-analysis/period" data-subpage="period">기간별 ROI</a></li>
+            <li><a href="#roi-analysis/media" data-subpage="media">매체별 ROI</a></li>
+            <li><a href="#roi-analysis/brand" data-subpage="brand">브랜드별 ROI</a></li>
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item" data-page="data-management">
+          <a href="#data-management" class="nav-link">
             <span class="nav-icon">🗄️</span>
             <span>데이터 관리</span>
           </a>
           <ul class="nav-sublist">
-            <li><a href="#">CSV 업로드</a></li>
-            <li><a href="#">수집 현황</a></li>
-            <li><a href="#">데이터 보정</a></li>
+            <li><a href="#data-management/upload" data-subpage="upload">CSV 업로드</a></li>
+            <li><a href="#data-management/status" data-subpage="status">수집 현황</a></li>
+            <li><a href="#data-management/correction" data-subpage="correction">데이터 보정</a></li>
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item" data-page="settings">
+          <a href="#settings" class="nav-link">
             <span class="nav-icon">⚙️</span>
             <span>설정</span>
           </a>
           <ul class="nav-sublist">
-            <li><a href="#">API 연동</a></li>
-            <li><a href="#">알림 설정</a></li>
-            <li><a href="#">계정 관리</a></li>
+            <li><a href="#settings/api" data-subpage="api">API 연동</a></li>
+            <li><a href="#settings/alerts" data-subpage="alerts">알림 설정</a></li>
+            <li><a href="#settings/account" data-subpage="account">계정 관리</a></li>
           </ul>
         </li>
       </ul>
@@ -104,189 +104,263 @@
       <button class="btn btn-primary" id="btnRefresh">통합 지표 상세 보기</button>
     </header>
 
-    <!-- ─── Filter Row ─── -->
-    <section class="filter-row">
-      <div class="filter-group">
-        <select id="filterBrand" class="filter-select">
-          <option value="all">브랜드: 전체</option>
-          <option value="odp">ODP</option>
-          <option value="ordinary">오디너리홀리데이</option>
-          <option value="childy">차일디</option>
-        </select>
+    <!-- ═══════════════════════════════════════════
+         PAGE: DASHBOARD
+    ═══════════════════════════════════════════ -->
+    <div class="page-content" id="page-dashboard">
 
-        <select id="filterMedia" class="filter-select">
-          <option value="all">매체: 전체</option>
-          <option value="naver_sa">네이버SA</option>
-          <option value="naver_da">네이버DA</option>
-          <option value="meta">메타</option>
-          <option value="criteo">크리테오</option>
-        </select>
+      <!-- ─── Filter Row ─── -->
+      <section class="filter-row">
+        <div class="filter-group">
+          <select id="filterBrand" class="filter-select">
+            <option value="all">브랜드: 전체</option>
+            <option value="odp">ODP</option>
+            <option value="ordinary">오디너리홀리데이</option>
+            <option value="childy">차일디</option>
+          </select>
 
-        <select id="filterAdType" class="filter-select">
-          <option value="all">광고유형: 전체</option>
-          <option value="shopping">쇼핑검색</option>
-          <option value="powerlink">파워링크</option>
-          <option value="adboost">애드부스트</option>
-        </select>
+          <select id="filterMedia" class="filter-select">
+            <option value="all">매체: 전체</option>
+            <option value="naver_sa">네이버SA</option>
+            <option value="naver_da">네이버DA</option>
+            <option value="meta">메타</option>
+            <option value="criteo">크리테오</option>
+          </select>
 
-        <select id="periodSelect" class="filter-select">
-          <option value="7d">기간: 최근 7일 (오늘 제외)</option>
-          <option value="30d">최근 30일</option>
-          <option value="thisMonth">이번 달</option>
-          <option value="custom">직접 선택</option>
-        </select>
-      </div>
+          <select id="filterAdType" class="filter-select">
+            <option value="all">광고유형: 전체</option>
+            <option value="shopping">쇼핑검색</option>
+            <option value="powerlink">파워링크</option>
+            <option value="adboost">애드부스트</option>
+          </select>
 
-      <!-- Custom date inputs (hidden by default) -->
-      <div class="filter-dates" id="customDates" style="display:none;">
-        <input type="date" id="startDate" class="filter-input">
-        <span class="filter-date-sep">~</span>
-        <input type="date" id="endDate" class="filter-input">
-        <button class="btn btn-secondary btn-sm" id="applyDate">적용</button>
-      </div>
-    </section>
+          <select id="periodSelect" class="filter-select">
+            <option value="7d">기간: 최근 7일 (오늘 제외)</option>
+            <option value="30d">최근 30일</option>
+            <option value="thisMonth">이번 달</option>
+            <option value="custom">직접 선택</option>
+          </select>
+        </div>
 
-    <!-- ─── KPI Cards ─── -->
-    <section class="kpi-grid">
-      <div class="kpi-card" id="kpiRoi">
-        <span class="kpi-label">실제ROI</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-change up">▲ 전월 대비 +18%</span>
-      </div>
-      <div class="kpi-card" id="kpiRoas">
-        <span class="kpi-label">ROAS</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-change up">▲ 전월 대비 +12%</span>
-      </div>
-      <div class="kpi-card" id="kpiCost">
-        <span class="kpi-label">총 광고비</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-change down">▼ 전월 대비 -5%</span>
-      </div>
-      <div class="kpi-card" id="kpiRevenue">
-        <span class="kpi-label">구매전환액(매출)</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-change up">▲ 전월 대비 +22%</span>
-      </div>
-      <div class="kpi-card" id="kpiPurchase">
-        <span class="kpi-label">구매전환 수</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-change up">▲ 전월 대비 +15%</span>
-      </div>
-      <div class="kpi-card" id="kpiConvRate">
-        <span class="kpi-label">구매전환율</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-change up">▲ 전월 대비 +8%</span>
-      </div>
-    </section>
+        <!-- Custom date inputs (hidden by default) -->
+        <div class="filter-dates" id="customDates" style="display:none;">
+          <input type="date" id="startDate" class="filter-input">
+          <span class="filter-date-sep">~</span>
+          <input type="date" id="endDate" class="filter-input">
+          <button class="btn btn-secondary btn-sm" id="applyDate">적용</button>
+        </div>
+      </section>
 
-    <!-- ─── Charts Section (2 columns) ─── -->
-    <section class="charts-grid">
-      <!-- Left: ROI Trend -->
-      <div class="chart-panel">
-        <div class="chart-header">
-          <h3 class="chart-title">ROI 추이 (기간별)</h3>
-          <div class="chart-toggles">
-            <button class="btn btn-ghost btn-xs active">라인</button>
-            <button class="btn btn-ghost btn-xs">바</button>
+      <!-- ─── KPI Cards ─── -->
+      <section class="kpi-grid">
+        <div class="kpi-card" id="kpiRoi">
+          <span class="kpi-label">실제ROI</span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-change up">▲ 전월 대비 +18%</span>
+        </div>
+        <div class="kpi-card" id="kpiRoas">
+          <span class="kpi-label">ROAS</span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-change up">▲ 전월 대비 +12%</span>
+        </div>
+        <div class="kpi-card" id="kpiCost">
+          <span class="kpi-label">총 광고비</span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-change down">▼ 전월 대비 -5%</span>
+        </div>
+        <div class="kpi-card" id="kpiRevenue">
+          <span class="kpi-label">구매전환액(매출)</span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-change up">▲ 전월 대비 +22%</span>
+        </div>
+        <div class="kpi-card" id="kpiPurchase">
+          <span class="kpi-label">구매전환 수</span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-change up">▲ 전월 대비 +15%</span>
+        </div>
+        <div class="kpi-card" id="kpiConvRate">
+          <span class="kpi-label">구매전환율</span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-change up">▲ 전월 대비 +8%</span>
+        </div>
+      </section>
+
+      <!-- ─── Charts Section (2 columns) ─── -->
+      <section class="charts-grid">
+        <!-- Left: ROI Trend -->
+        <div class="chart-panel">
+          <div class="chart-header">
+            <h3 class="chart-title">ROI 추이 (기간별)</h3>
+            <div class="chart-toggles">
+              <button class="btn btn-ghost btn-xs active">라인</button>
+              <button class="btn btn-ghost btn-xs">바</button>
+            </div>
+          </div>
+          <div class="chart-placeholder" style="height:200px;">
+            <span class="chart-placeholder-text">차트 영역</span>
           </div>
         </div>
-        <div class="chart-placeholder" style="height:200px;">
-          <span class="chart-placeholder-text">차트 영역</span>
+
+        <!-- Right: Media Spend Ratio -->
+        <div class="chart-panel">
+          <div class="chart-header">
+            <h3 class="chart-title">매체별 광고비 비중</h3>
+          </div>
+          <div class="chart-placeholder donut" style="height:200px;">
+            <span class="chart-placeholder-text">도넛 차트 영역</span>
+          </div>
         </div>
+      </section>
+
+      <!-- ─── Section Title ─── -->
+      <div class="section-heading">
+        <h2 class="section-title">기간별 상세 데이터</h2>
       </div>
 
-      <!-- Right: Media Spend Ratio -->
-      <div class="chart-panel">
-        <div class="chart-header">
-          <h3 class="chart-title">매체별 광고비 비중</h3>
-        </div>
-        <div class="chart-placeholder donut" style="height:200px;">
-          <span class="chart-placeholder-text">도넛 차트 영역</span>
-        </div>
-      </div>
-    </section>
+      <!-- ─── Data Table ─── -->
+      <section class="table-wrap">
+        <table class="data-table" id="mainTable">
+          <thead>
+            <tr>
+              <th>캠페인</th>
+              <th class="num">광고비</th>
+              <th class="num">노출</th>
+              <th class="num">클릭</th>
+              <th class="num">CTR</th>
+              <th class="num">장바구니</th>
+              <th class="num">구매</th>
+              <th class="num">구매액</th>
+              <th class="num">구매ROAS</th>
+              <th class="num">노출→구매</th>
+              <th class="num">클릭→구매</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dynamic data rendered by app.js -->
+          </tbody>
+        </table>
+      </section>
 
-    <!-- ─── Section Title ─── -->
-    <div class="section-heading">
-      <h2 class="section-title">기간별 상세 데이터</h2>
+      <!-- ─── Bottom Section (2 columns) ─── -->
+      <section class="bottom-grid">
+        <!-- Left: Drilldown Analysis -->
+        <div class="bottom-panel">
+          <h3 class="panel-title">드릴다운 분석</h3>
+          <div class="drilldown-cards">
+            <a href="#brand-analysis" class="drilldown-card">
+              <span class="drilldown-icon">📊</span>
+              <div class="drilldown-info">
+                <strong>브랜드/매체 분석</strong>
+                <small>브랜드·매체별 성과 비교</small>
+              </div>
+              <span class="drilldown-arrow">→</span>
+            </a>
+            <a href="#roi-analysis" class="drilldown-card">
+              <span class="drilldown-icon">💹</span>
+              <div class="drilldown-info">
+                <strong>ROI 상세 분석</strong>
+                <small>수수료·마진 반영 실제 수익률</small>
+              </div>
+              <span class="drilldown-arrow">→</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right: Data Collection Status -->
+        <div class="bottom-panel">
+          <h3 class="panel-title">데이터 수집 상태</h3>
+          <ul class="status-list" id="dashboardStatusList">
+            <li class="status-item">
+              <span class="status-name">네이버SA</span>
+              <span class="status-badge ok">정상</span>
+            </li>
+            <li class="status-item">
+              <span class="status-name">메타</span>
+              <span class="status-badge ok">정상</span>
+            </li>
+            <li class="status-item">
+              <span class="status-name">크리테오</span>
+              <span class="status-badge ok">정상</span>
+            </li>
+            <li class="status-item">
+              <span class="status-name">네이버DA (CSV)</span>
+              <span class="status-badge warn">누락경고</span>
+            </li>
+            <li class="status-item">
+              <span class="status-name">자사몰</span>
+              <span class="status-badge ok">정상</span>
+            </li>
+          </ul>
+          <button class="btn btn-secondary btn-sm" id="btnUploadWrap">데이터 관리</button>
+        </div>
+      </section>
+
+    </div>
+    <!-- END page-dashboard -->
+
+    <!-- ═══════════════════════════════════════════
+         PAGE: BRAND ANALYSIS
+    ═══════════════════════════════════════════ -->
+    <div class="page-content hidden" id="page-brand-analysis">
+      <section class="page-inner">
+        <div class="sub-nav" id="brandSubNav">
+          <button class="sub-nav-btn active" data-subpage="brand">브랜드별 성과</button>
+          <button class="sub-nav-btn" data-subpage="media">매체별 성과</button>
+          <button class="sub-nav-btn" data-subpage="campaign">캠페인 상세</button>
+        </div>
+        <div class="page-body" id="brandAnalysisBody">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
     </div>
 
-    <!-- ─── Data Table ─── -->
-    <section class="table-wrap">
-      <table class="data-table" id="mainTable">
-        <thead>
-          <tr>
-            <th>날짜</th>
-            <th>매체</th>
-            <th>광고비</th>
-            <th>노출</th>
-            <th>클릭</th>
-            <th>전환</th>
-            <th>매출액</th>
-            <th>ROAS</th>
-            <th>실제ROI</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Dynamic data rendered by app.js -->
-        </tbody>
-      </table>
-    </section>
-
-    <!-- ─── Bottom Section (2 columns) ─── -->
-    <section class="bottom-grid">
-      <!-- Left: Drilldown Analysis -->
-      <div class="bottom-panel">
-        <h3 class="panel-title">드릴다운 분석</h3>
-        <div class="drilldown-cards">
-          <a href="#" class="drilldown-card">
-            <span class="drilldown-icon">📊</span>
-            <div class="drilldown-info">
-              <strong>브랜드/매체 분석</strong>
-              <small>브랜드·매체별 성과 비교</small>
-            </div>
-            <span class="drilldown-arrow">→</span>
-          </a>
-          <a href="#" class="drilldown-card">
-            <span class="drilldown-icon">💹</span>
-            <div class="drilldown-info">
-              <strong>ROI 상세 분석</strong>
-              <small>수수료·마진 반영 실제 수익률</small>
-            </div>
-            <span class="drilldown-arrow">→</span>
-          </a>
+    <!-- ═══════════════════════════════════════════
+         PAGE: ROI ANALYSIS
+    ═══════════════════════════════════════════ -->
+    <div class="page-content hidden" id="page-roi-analysis">
+      <section class="page-inner">
+        <div class="sub-nav" id="roiSubNav">
+          <button class="sub-nav-btn active" data-subpage="period">기간별 ROI</button>
+          <button class="sub-nav-btn" data-subpage="media">매체별 ROI</button>
+          <button class="sub-nav-btn" data-subpage="brand">브랜드별 ROI</button>
         </div>
-      </div>
+        <div class="page-body" id="roiAnalysisBody">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+    </div>
 
-      <!-- Right: Data Collection Status -->
-      <div class="bottom-panel">
-        <h3 class="panel-title">데이터 수집 상태</h3>
-        <ul class="status-list">
-          <li class="status-item">
-            <span class="status-name">네이버SA</span>
-            <span class="status-badge ok">정상</span>
-          </li>
-          <li class="status-item">
-            <span class="status-name">메타</span>
-            <span class="status-badge ok">정상</span>
-          </li>
-          <li class="status-item">
-            <span class="status-name">크리테오</span>
-            <span class="status-badge ok">정상</span>
-          </li>
-          <li class="status-item">
-            <span class="status-name">네이버DA (CSV)</span>
-            <span class="status-badge warn">누락경고</span>
-          </li>
-          <li class="status-item">
-            <span class="status-name">자사몰</span>
-            <span class="status-badge ok">정상</span>
-          </li>
-        </ul>
-        <button class="btn btn-secondary btn-sm" id="btnUploadWrap">데이터 관리</button>
-      </div>
-    </section>
+    <!-- ═══════════════════════════════════════════
+         PAGE: DATA MANAGEMENT
+    ═══════════════════════════════════════════ -->
+    <div class="page-content hidden" id="page-data-management">
+      <section class="page-inner">
+        <div class="sub-nav" id="dataSubNav">
+          <button class="sub-nav-btn active" data-subpage="upload">CSV 업로드</button>
+          <button class="sub-nav-btn" data-subpage="status">수집 현황</button>
+          <button class="sub-nav-btn" data-subpage="correction">데이터 보정</button>
+        </div>
+        <div class="page-body" id="dataManagementBody">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PAGE: SETTINGS
+    ═══════════════════════════════════════════ -->
+    <div class="page-content hidden" id="page-settings">
+      <section class="page-inner">
+        <div class="sub-nav" id="settingsSubNav">
+          <button class="sub-nav-btn active" data-subpage="api">API 연동</button>
+          <button class="sub-nav-btn" data-subpage="alerts">알림 설정</button>
+          <button class="sub-nav-btn" data-subpage="account">계정 관리</button>
+        </div>
+        <div class="page-body" id="settingsBody">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+    </div>
 
     <!-- Status bar -->
     <div class="status-bar" id="statusBar"></div>
