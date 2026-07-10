@@ -162,6 +162,7 @@ function applyFilters(data) {
       if (media === "naver_da" && acc !== "DA") return false;
       if (media === "meta" && acc !== "META") return false;
       if (media === "criteo" && acc !== "CRITEO") return false;
+      if (media === "kakao_friendtalk" && acc !== "KAKAO" && acc !== "KAKAO_FRIENDTALK") return false;
     }
     // 광고유형 필터
     if (adType !== "all") {
