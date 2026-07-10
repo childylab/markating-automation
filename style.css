@@ -210,6 +210,17 @@ table { border-collapse: collapse; width: 100%; }
 .data-table tbody tr:hover { background: var(--color-primary-light); }
 .data-table td.num, .data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
+/* Sortable headers */
+.data-table th.sortable { cursor: pointer; user-select: none; position: relative; }
+.data-table th.sortable:hover { color: var(--color-primary); }
+.sort-arrow { display: inline-block; width: 10px; font-size: 9px; color: var(--color-text-muted); opacity: 0; transition: opacity 0.15s ease; margin-left: 2px; vertical-align: middle; }
+.data-table th.sortable:hover .sort-arrow { opacity: 0.5; }
+.data-table th.sortable.asc .sort-arrow,
+.data-table th.sortable.desc .sort-arrow { opacity: 1; color: var(--color-primary); }
+.data-table th.sortable.asc .sort-arrow::after { content: "▲"; }
+.data-table th.sortable.desc .sort-arrow::after { content: "▼"; }
+.data-table th.sortable:not(.asc):not(.desc) .sort-arrow::after { content: "▲"; }
+
 /* ═══════════════════════════════════════════════════════════════
    BOTTOM GRID
    ═══════════════════════════════════════════════════════════════ */

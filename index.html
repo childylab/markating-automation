@@ -28,7 +28,7 @@
         <strong class="brand-name">Childy Lab</strong>
       </div>
       <nav class="top-nav-tabs" id="mainNav">
-        <a href="#dashboard" class="nav-tab active" data-page="dashboard">광고 성과</a>
+        <a href="#dashboard" class="nav-tab active" data-page="dashboard">통합 대시보드</a>
         <a href="#brand-analysis" class="nav-tab" data-page="brand-analysis">브랜드/매체 분석</a>
         <a href="#roi-analysis" class="nav-tab" data-page="roi-analysis">ROI 분석</a>
         <span class="nav-divider"></span>
@@ -146,36 +146,23 @@
         <table class="data-table" id="mainTable">
           <thead>
             <tr>
-              <th>캠페인</th>
-              <th class="num">광고비</th>
-              <th class="num">노출</th>
-              <th class="num">클릭</th>
-              <th class="num">CTR</th>
-              <th class="num">장바구니</th>
-              <th class="num">구매</th>
-              <th class="num">구매액</th>
-              <th class="num">구매ROAS</th>
-              <th class="num">노출→구매</th>
-              <th class="num">클릭→구매</th>
+              <th class="sortable" data-col="name" data-type="str">캠페인 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="cost" data-type="num">광고비 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="impressions" data-type="num">노출 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="clicks" data-type="num">클릭 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="ctr" data-type="num">CTR <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="cartCount" data-type="num">장바구니 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="purchaseCount" data-type="num">구매 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="purchaseAmount" data-type="num">구매액 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="roas" data-type="num">구매ROAS <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="impToPurchase" data-type="num">노출→구매 <span class="sort-arrow"></span></th>
+              <th class="num sortable" data-col="clkToPurchase" data-type="num">클릭→구매 <span class="sort-arrow"></span></th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </section>
 
-      <!-- Bottom: Data Collection Status -->
-      <section class="bottom-grid" style="grid-template-columns: 1fr;">
-        <div class="bottom-panel">
-          <h3 class="panel-title">데이터 수집 상태</h3>
-          <ul class="status-list" id="collectionStatus">
-            <li class="status-item"><span class="status-name">네이버SA</span><span class="status-badge pending">미수집</span></li>
-            <li class="status-item"><span class="status-name">네이버DA</span><span class="status-badge pending">미수집</span></li>
-            <li class="status-item"><span class="status-name">메타</span><span class="status-badge pending">미수집</span></li>
-            <li class="status-item"><span class="status-name">크리테오</span><span class="status-badge pending">미수집</span></li>
-          </ul>
-          <button class="btn btn-secondary btn-sm" id="btnUploadWrap">데이터 관리</button>
-        </div>
-      </section>
     </div>
 
     <!-- ═══ PAGE: SNS ═══ -->

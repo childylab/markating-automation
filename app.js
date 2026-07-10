@@ -148,13 +148,17 @@ function applyFilters(data) {
 // ROUTER
 // ═══════════════════════════════════════════════════════════════
 const PAGE_TITLES = {
-  "dashboard": "광고 성과",
+  "dashboard": "통합 대시보드",
   "sns": "SNS 성과",
   "brand-analysis": "브랜드/매체 분석",
   "roi-analysis": "ROI 분석",
   "data-management": "데이터 관리",
   "settings": "설정"
 };
+
+// 테이블 정렬 상태
+let sortCol = "cost";
+let sortDir = "desc";
 
 function navigateTo(page, subPage) {
   currentPage = page || "dashboard";
@@ -395,7 +399,31 @@ function renderTable() {
     return;
   }
 
-  const sorted = [...data].sort((a, b) => b.cost - a.cost);
+  // 계산 컬럼 추가 후 정렬
+  const enriched = data.map(c => ({
+    ...c,
+    ctr: c.impressions ? (c.clicks / c.impressions) * 100 : 0,
+    roas: c.cost ? (c.purchaseAmount / c.cost) * 100 : 0,
+    impToPurchase: c.impressions && c.purchaseCount ? (c.purchaseCount / c.impressions) * 100 : 0,
+    clkToPurchase: c.clicks && c.purchaseCount ? (c.purchaseCount / c.clicks) * 100 : 0,
+  }));
+
+  const sorted = [...enriched].sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (sortCol === "name") {
+      va = (va || "").toLowerCase(); vb = (vb || "").toLowerCase();
+      return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    va = va || 0; vb = vb || 0;
+    return sortDir === "asc" ? va - vb : vb - va;
+  });
+
+  // 헤더 정렬 상태 반영
+  document.querySelectorAll("#mainTable th.sortable").forEach(th => {
+    th.classList.remove("asc", "desc");
+    if (th.dataset.col === sortCol) th.classList.add(sortDir);
+  });
+
   tbody.innerHTML = "";
 
   sorted.forEach((c, idx) => {
@@ -1060,6 +1088,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // "데이터 관리" button on dashboard
   const btnUpload = document.getElementById("btnUploadWrap");
   if (btnUpload) btnUpload.addEventListener("click", () => { window.location.hash = "#data-management/upload"; });
+
+  // 테이블 헤더 정렬 클릭
+  document.querySelectorAll("#mainTable th.sortable").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col;
+      if (sortCol === col) {
+        sortDir = sortDir === "desc" ? "asc" : "desc";
+      } else {
+        sortCol = col;
+        sortDir = th.dataset.type === "str" ? "asc" : "desc";
+      }
+      renderTable();
+    });
+  });
 
   // Chart toggle: ROAS / ROI
   const btnRoas = document.getElementById("btnChartRoas");
