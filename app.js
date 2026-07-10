@@ -577,11 +577,16 @@ function renderTable() {
 }
 
 function buildDailyHtml(dailyData) {
+  // 상위 테이블 컬럼과 세로 정렬 맞춤
+  // 상위: [토글][브랜드][매체][광고유형][캠페인] | 노출 | 클릭 | CTR | 장바구니 | 구매 | 광고비 | 구매액(광고매출) | ROAS | 전체매출 | 광고매출비중 | 몰수수료 | 고정비 | ROI
+  const logRate = costSettings.logisticsFee / 100;
+
   let html = `<table class="daily-table">
     <thead><tr>
       <th>날짜</th><th class="num">노출</th><th class="num">클릭</th><th class="num">CTR</th>
-      <th class="num">장바구니</th><th class="num">구매</th>
-      <th class="num">광고비</th><th class="num">구매액(광고매출)</th><th class="num">ROAS</th>
+      <th class="num">장바구니</th><th class="num">구매</th><th class="num">광고비</th>
+      <th class="num">구매액(광고매출)</th><th class="num">ROAS</th><th class="num">전체매출</th>
+      <th class="num">광고매출비중</th><th class="num">몰수수료</th><th class="num">고정비</th><th class="num">ROI</th>
     </tr></thead><tbody>`;
   dailyData.forEach((d) => {
     const costStr = d.cost === null || d.cost === undefined ? "-" : fmtWon(d.cost);
@@ -589,11 +594,18 @@ function buildDailyHtml(dailyData) {
     const clkStr = d.clicks === null || d.clicks === undefined ? "-" : fmt(d.clicks);
     const ctr = d.impressions && d.clicks ? ((d.clicks / d.impressions) * 100).toFixed(2) + "%" : "-";
     const roas = (d.cost != null && d.cost > 0 && d.purchaseAmount) ? ((d.purchaseAmount / d.cost) * 100).toFixed(1) + "%" : "-";
+    const rev = d.purchaseAmount || 0;
+    const logistics = rev * logRate;
+    const logStr = logistics > 0 ? fmtWon(Math.round(logistics)) : "-";
+    // 몰수수료는 브랜드별이라 일별에서는 상위 캠페인 기준으로 계산 어려움 → 일단 '-'
     html += `<tr>
       <td>${d.date}</td>
       <td class="num">${impStr}</td><td class="num">${clkStr}</td><td class="num">${ctr}</td>
       <td class="num">${fmt(d.cartCount || 0)}</td><td class="num">${fmt(d.purchaseCount || 0)}</td>
-      <td class="num">${costStr}</td><td class="num">${fmtWon(d.purchaseAmount || 0)}</td><td class="num">${roas}</td>
+      <td class="num">${costStr}</td><td class="num">${fmtWon(rev)}</td><td class="num">${roas}</td>
+      <td class="num">-</td><td class="num">-</td>
+      <td class="num">-</td><td class="num">${logStr}</td>
+      <td class="num"><span class="roi-unavailable" title="상품원가 미연동">계산 불가</span></td>
     </tr>`;
   });
   html += "</tbody></table>";
